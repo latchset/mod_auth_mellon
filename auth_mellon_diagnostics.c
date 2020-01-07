@@ -214,6 +214,7 @@ am_diag_samesite_str(request_rec *r, am_samesite_t samesite)
     case am_samesite_default: return "default";
     case am_samesite_lax:     return "lax";
     case am_samesite_strict:  return "strict";
+    case am_samesite_none:    return "none";
     default:
         return apr_psprintf(r->pool, "unknown (%d)", samesite);
     }

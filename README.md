@@ -218,8 +218,11 @@ MellonDiagnosticsEnable Off
 
         # MellonCookieSameSite allows control over the SameSite value used
         # for the authentication cookie.
-        # The setting accepts values of "Strict" or "Lax"
-        # If not set, the SameSite attribute is not set on the cookie.
+        # The setting accepts values of "Strict", "Lax", or "None".
+        # When using none, you should set "MellonSecureCookie On" to prevent
+        # compatibility issues with newer browsers.
+        # If not set, the SameSite attribute is not set on the cookie. In newer
+        # browsers, this may cause SameSite to default to "Lax"
         # Default: not set
         # MellonCookieSameSite lax
 

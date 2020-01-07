@@ -1,7 +1,7 @@
 /*
  *
  *   auth_mellon_cookie.c: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright Â© 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -73,6 +73,8 @@ static const char *am_cookie_params(request_rec *r)
         cookie_samesite = "; SameSite=Lax";
     } else if (cfg->cookie_samesite == am_samesite_strict) {
         cookie_samesite = "; SameSite=Strict";
+    } else if (cfg->cookie_samesite == am_samesite_none) {
+        cookie_samesite = "; SameSite=None";
     }
 
     secure_cookie = cfg->secure;

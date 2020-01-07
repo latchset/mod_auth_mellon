@@ -164,7 +164,8 @@ typedef enum {
 typedef enum {
   am_samesite_default,
   am_samesite_lax,
-  am_samesite_strict
+  am_samesite_strict,
+  am_samesite_none,
 } am_samesite_t;
 
 typedef enum {
