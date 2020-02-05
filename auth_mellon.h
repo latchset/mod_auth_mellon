@@ -379,7 +379,8 @@ typedef struct am_cache_entry_t {
 
 typedef enum { 
     AM_CACHE_SESSION, 
-    AM_CACHE_NAMEID 
+    AM_CACHE_NAMEID,
+    AM_CACHE_ASSERTIONID
 } am_cache_key_t;
 
 /* Type for configuring environment variable names */
@@ -482,6 +483,8 @@ const char *am_cache_get_lasso_session(am_cache_entry_t *session);
 am_cache_entry_t *am_get_request_session(request_rec *r);
 am_cache_entry_t *am_get_request_session_by_nameid(request_rec *r, 
                                                    char *nameid);
+am_cache_entry_t *am_get_request_session_by_assertionid(request_rec *r,
+                                                        char *assertionid);
 am_cache_entry_t *am_new_request_session(request_rec *r);
 void am_release_request_session(request_rec *r, am_cache_entry_t *session);
 void am_delete_request_session(request_rec *r, am_cache_entry_t *session);

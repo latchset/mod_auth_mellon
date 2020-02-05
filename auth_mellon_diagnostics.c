@@ -809,9 +809,10 @@ const char *
 am_diag_cache_key_type_str(am_cache_key_t key_type)
 {
     switch(key_type) {
-    case AM_CACHE_SESSION: return "session";
-    case AM_CACHE_NAMEID : return "name id";
-    default:               return "unknown";
+    case AM_CACHE_SESSION:      return "session";
+    case AM_CACHE_NAMEID:       return "name id";
+    case AM_CACHE_ASSERTIONID:  return "assertion id";
+    default:                    return "unknown";
     }
 }
 
@@ -1108,6 +1109,7 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
     am_req_cfg_rec *req_cfg = am_get_req_cfg(r);
 
     const char *name_id = NULL;
+    const char *assertion_id = NULL;
 
     if (!AM_DIAG_ENABLED(diag_cfg)) return;
     if (!am_diag_initialize_req(r, diag_cfg, req_cfg)) return;
@@ -1118,6 +1120,7 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
 
     if (entry) {
         name_id = am_cache_env_fetch_first(entry, "NAME_ID");
+        assertion_id = am_cache_env_fetch_first(entry, "ASSERTION_ID");
 
         apr_file_printf(diag_cfg->fd,
                         "%skey: %s\n",
@@ -1125,6 +1128,9 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
         apr_file_printf(diag_cfg->fd,
                         "%sname_id: %s\n",
                         indent(level+1), name_id);
+        apr_file_printf(diag_cfg->fd,
+                        "%sassertion_id: %s\n",
+                        indent(level+1), assertion_id);
         apr_file_printf(diag_cfg->fd,
                         "%sexpires: %s\n",
                         indent(level+1),

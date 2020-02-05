@@ -1564,6 +1564,42 @@ static int am_validate_conditions(request_rec *r,
 
 
 
+/* Validate that the ID of the Assertion has not been used.
+ *
+ * Parameters:
+ *  request_rec *r                   The current request. Used to log
+ *                                   errors.
+ *  LassoSaml2Assertion *assertion   The assertion we will validate.
+ *
+ * Returns:
+ *  OK on success, HTTP_BAD_REQUEST on failure.
+ */
+static int am_validate_unique_assertion_id(request_rec *r,
+                                           LassoSaml2Assertion *assertion)
+{
+    am_cache_entry_t *session = NULL;
+
+    if (assertion->ID == NULL) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Assertion ID is not present.");
+        return HTTP_BAD_REQUEST;
+    }
+
+    // Check if there is a session associate with the Assertion ID
+    session = am_get_request_session_by_assertionid(r, assertion->ID);
+    if (session != NULL) {
+        am_cache_unlock(r, session);
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Assertion ID %s has already been used.",
+                      assertion->ID);
+        return HTTP_BAD_REQUEST;
+    }
+
+    return OK;
+}
+
+
+
 /* This function sets the session expire timestamp based on NotOnOrAfter
  * attribute of a condition element.
  *
@@ -1663,8 +1699,14 @@ static int add_attributes(am_cache_entry_t *session, request_rec *r,
                                 + apr_time_make(dir_cfg->session_length, 0));
     }
 
-    /* Save session information. */
+    /* Save session NAME_ID information. */
     ret = am_cache_env_append(session, "NAME_ID", name_id);
+    if(ret != OK) {
+        return ret;
+    }
+
+    /* Save session ASSERTION_ID information. */
+    ret = am_cache_env_append(session, "ASSERTION_ID", assertion->ID);
     if(ret != OK) {
         return ret;
     }
@@ -1915,6 +1957,13 @@ static int am_handle_reply_common(request_rec *r, LassoLogin *login,
 
     rc = am_validate_conditions(r, assertion,
         LASSO_PROVIDER(LASSO_PROFILE(login)->server)->ProviderID);
+
+    if (rc != OK) {
+        lasso_login_destroy(login);
+        return rc;
+    }
+
+    rc = am_validate_unique_assertion_id(r, assertion);
 
     if (rc != OK) {
         lasso_login_destroy(login);

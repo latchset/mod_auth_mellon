@@ -1,7 +1,7 @@
 /*
  *
  *   auth_mellon_session.c: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright Â© 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ APLOG_USE_MODULE(auth_mellon);
  *
  * Parameters:
  *  request_rec *r       The request we received from the user.
- *  am_cache_key_t type  AM_CACHE_SESSION or AM_CACHE_NAMEID
+ *  am_cache_key_t type  AM_CACHE_SESSION, AM_CACHE_NAMEID or AM_CACHE_ASSERTIONID
  *  const char *key      The session key or user
  *
  * Returns:
@@ -106,6 +106,21 @@ am_cache_entry_t *am_get_request_session(request_rec *r)
 am_cache_entry_t *am_get_request_session_by_nameid(request_rec *r, char *nameid)
 {
     return am_lock_and_validate(r, AM_CACHE_NAMEID, nameid);
+}
+
+/* This function gets the session associated with a user, using the Assertion ID
+ *
+ * Parameters:
+ *  request_rec *r       The request we received from the user.
+ *  char *assertionid    The AssertionID
+ *
+ * Returns:
+ *  The session associated with the user who places the request, or
+ *  NULL if we don't have a session yet.
+ */
+am_cache_entry_t *am_get_request_session_by_assertionid(request_rec *r, char *assertionid)
+{
+    return am_lock_and_validate(r, AM_CACHE_ASSERTIONID, assertionid);
 }
 
 /* This function creates a new session.

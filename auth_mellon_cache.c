@@ -1,7 +1,7 @@
 /*
  *
  *   auth_mellon_cache.c: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright Â© 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ void am_cache_init(am_mod_cfg_rec *mod_cfg)
  *
  * Parameters:
  *  request_rec *r       The request we are processing.
- *  am_cache_key_t type  AM_CACHE_SESSION or AM_CACHE_NAMEID
+ *  am_cache_key_t type  AM_CACHE_SESSION, AM_CACHE_NAMEID or AM_CACHE_ASSERTIONID
  *  const char *key      The session key or user
  *
  * Returns:
@@ -98,6 +98,7 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
             return NULL;
         break;
     case AM_CACHE_NAMEID:
+    case AM_CACHE_ASSERTIONID:
         break;
     default:
         return NULL;
@@ -134,6 +135,10 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
         case AM_CACHE_NAMEID:
             /* tablekey may be NULL */
             tablekey = am_cache_env_fetch_first(e, "NAME_ID");
+            break;
+        case AM_CACHE_ASSERTIONID:
+            /* tablekey may be NULL */
+            tablekey = am_cache_env_fetch_first(e, "ASSERTION_ID");
             break;
         default:
             tablekey = NULL;
