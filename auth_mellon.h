@@ -324,6 +324,10 @@ typedef struct am_dir_cfg_rec {
 
     /* Enabled the session invalidate endpoint. */
     int enabled_invalidation_session;
+
+    /* Send Expect Header. */
+    int send_expect_header;
+
 } am_dir_cfg_rec;
 
 /* Bitmask for PAOS service options */

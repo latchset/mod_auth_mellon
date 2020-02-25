@@ -483,6 +483,7 @@ int am_httpclient_post(request_rec *r, const char *uri,
     char curl_error[CURL_ERROR_SIZE];
     CURLcode res;
     struct curl_slist *ctheader;
+    am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
 
     /* Initialize the data storage. */
     am_hc_block_header_init(&bh, r->pool);
@@ -536,6 +537,11 @@ int am_httpclient_post(request_rec *r, const char *uri,
                                      content_type,
                                      NULL
                                      ));
+
+    /* Check if the send expect header is "off". */
+    if (cfg->send_expect_header == 0) {
+        ctheader = curl_slist_append(ctheader, "Expect:");
+    }
 
     /* Set headers. */
     res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, ctheader);

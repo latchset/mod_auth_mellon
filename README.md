@@ -776,6 +776,20 @@ MellonEnabledInvalidateSessionEndpoint On
 Default value is Off
 
 
+## Send Expect Header
+The Expect Header save an additional network round-trip and is thus a good idea when
+the request isn't extremely large and the probability for rejection is low.
+For some Apache server version, the Expect Header is not properly managed and the curl command will 
+wait for 1 sec. before sending the body of the request. 
+If the Expect Header is not present, there won't be wait time in the HTTP-Artifact binding.
+
+Here is a sample configuration to not send the Expect header:
+```ApacheConf
+MellonSendExpectHeader Off
+```
+Default value is On
+
+
 ## Probe IdP discovery 
 
 mod_auth_mellon has an IdP probe discovery service that sends HTTP GET
