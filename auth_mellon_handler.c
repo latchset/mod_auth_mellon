@@ -817,7 +817,7 @@ exit:
  */
 static int am_handle_invalidate_request(request_rec *r)
 {
-    int rc;
+    gint res = 0, rc = HTTP_OK;
     char *return_to;
     am_cache_entry_t *session = am_get_request_session(r);
     am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
@@ -826,7 +826,8 @@ static int am_handle_invalidate_request(request_rec *r)
     if (cfg->enabled_invalidation_session == 0) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Session Invalidation Endpoint is not enabled.");
-        return HTTP_BAD_REQUEST;
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);
@@ -837,41 +838,55 @@ static int am_handle_invalidate_request(request_rec *r)
     if (return_to == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "No ReturnTo parameter provided for invalidate handler.");
-        return HTTP_BAD_REQUEST;
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
     /* Check for bad characters in ReturnTo. */
-    rc = am_check_url(r, return_to);
-    if (rc != OK) {
-        return rc;
+    res = am_check_url(r, return_to);
+    if (res != OK) {
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
-    rc = am_urldecode(return_to);
-    if (rc != OK) {
+    res = am_urldecode(return_to);
+    if (res != OK) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
                       "Could not urldecode ReturnTo value in invalidate"
                       " response.");
-        return HTTP_BAD_REQUEST;
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
     /* Make sure that it is a valid redirect URL. */
-    rc = am_validate_redirect_url(r, return_to);
-    if (rc != OK) {
+    res = am_validate_redirect_url(r, return_to);
+    if (res != OK) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Invalid target domain in invalidate response ReturnTo parameter.");
-        return rc;
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
     if (session == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error processing invalidate request message."
                       " No session found.");
-    } else {
-        am_delete_request_session(r, session);
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
+    am_delete_request_session(r, session);
+
     apr_table_setn(r->headers_out, "Location", return_to);
-    return HTTP_SEE_OTHER;
+
+    rc = HTTP_SEE_OTHER;
+
+exit:
+    if (session != NULL) {
+        am_release_request_session(r, session);
+    }
+
+    return rc;
 }
 
 /* This function handles a logout response message from the IdP. We get

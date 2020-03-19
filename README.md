@@ -768,7 +768,9 @@ without calling SLO. The mod_auth_mellon cookie session will be
 invalidated and the session will be removed from the mod_auth_mellon cache. 
 SLO will not be possible after the mod_auth_mellon session is invalidated.
 If this functionality is enabled, invalidate the session by calling 
-the endpoint "<endpoint path>/invalidate".
+the endpoint "<endpoint path>/invalidate?ReturnTo=<valid url>".
+The "ReturnTo" parameter is required.
+
 Here is a sample configuration to enabled this feature:
 ```ApacheConf
 MellonEnabledInvalidateSessionEndpoint On
