@@ -1,7 +1,7 @@
 /*
  *
  *   auth_mellon_handler.c: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright Â© 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -807,6 +807,87 @@ exit:
     return rc;
 }
 
+/* This function handles an invalidate request.
+ *
+ * Parameters:
+ *  request_rec *r       The logout request.
+ *
+ * Returns:
+ *  OK on success, or an error if any of the steps fail.
+ */
+static int am_handle_invalidate_request(request_rec *r)
+{
+    gint res = 0, rc = HTTP_OK;
+    char *return_to;
+    am_cache_entry_t *session = am_get_request_session(r);
+    am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
+
+    /* Check if the session invalidation endpoint is enabled. */
+    if (cfg->enabled_invalidation_session == 0) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Session Invalidation Endpoint is not enabled.");
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
+    }
+
+    am_diag_printf(r, "enter function %s\n", __func__);
+    am_diag_log_cache_entry(r, 0, session, "%s\n", __func__);
+
+    return_to = am_extract_query_parameter(r->pool, r->args, "ReturnTo");
+
+    if (return_to == NULL) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "No ReturnTo parameter provided for invalidate handler.");
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
+    }
+
+    /* Check for bad characters in ReturnTo. */
+    res = am_check_url(r, return_to);
+    if (res != OK) {
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
+    }
+
+    res = am_urldecode(return_to);
+    if (res != OK) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
+                      "Could not urldecode ReturnTo value in invalidate"
+                      " response.");
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
+    }
+
+    /* Make sure that it is a valid redirect URL. */
+    res = am_validate_redirect_url(r, return_to);
+    if (res != OK) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Invalid target domain in invalidate response ReturnTo parameter.");
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
+    }
+
+    if (session == NULL) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Error processing invalidate request message."
+                      " No session found.");
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
+    }
+
+    am_delete_request_session(r, session);
+
+    apr_table_setn(r->headers_out, "Location", return_to);
+
+    rc = HTTP_SEE_OTHER;
+
+exit:
+    if (session != NULL) {
+        am_release_request_session(r, session);
+    }
+
+    return rc;
+}
 
 /* This function handles a logout response message from the IdP. We get
  * this message after we have sent a logout request to the IdP.
@@ -1139,6 +1220,25 @@ static int am_handle_logout(request_rec *r)
     }
 }
 
+/* This function handles requests to the invalidate handler.
+ *
+ * Parameters:
+ *  request_rec *r       The request.
+ *
+ * Returns:
+ *  OK on success, or an error if any of the steps fail.
+ */
+static int am_handle_invalidate(request_rec *r)
+{
+    LassoServer *server;
+
+    server = am_get_lasso_server(r);
+    if (server == NULL) {
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    return am_handle_invalidate_request(r);
+}
 
 /* This function parses a timestamp for a SAML 2.0 condition.
  *
@@ -1479,6 +1579,42 @@ static int am_validate_conditions(request_rec *r,
 
 
 
+/* Validate that the ID of the Assertion has not been used.
+ *
+ * Parameters:
+ *  request_rec *r                   The current request. Used to log
+ *                                   errors.
+ *  LassoSaml2Assertion *assertion   The assertion we will validate.
+ *
+ * Returns:
+ *  OK on success, HTTP_BAD_REQUEST on failure.
+ */
+static int am_validate_unique_assertion_id(request_rec *r,
+                                           LassoSaml2Assertion *assertion)
+{
+    am_cache_entry_t *session = NULL;
+
+    if (assertion->ID == NULL) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Assertion ID is not present.");
+        return HTTP_BAD_REQUEST;
+    }
+
+    // Check if there is a session associate with the Assertion ID
+    session = am_get_request_session_by_assertionid(r, assertion->ID);
+    if (session != NULL) {
+        am_cache_unlock(r, session);
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Assertion ID %s has already been used.",
+                      assertion->ID);
+        return HTTP_BAD_REQUEST;
+    }
+
+    return OK;
+}
+
+
+
 /* This function sets the session expire timestamp based on NotOnOrAfter
  * attribute of a condition element.
  *
@@ -1578,8 +1714,14 @@ static int add_attributes(am_cache_entry_t *session, request_rec *r,
                                 + apr_time_make(dir_cfg->session_length, 0));
     }
 
-    /* Save session information. */
+    /* Save session NAME_ID information. */
     ret = am_cache_env_append(session, "NAME_ID", name_id);
+    if(ret != OK) {
+        return ret;
+    }
+
+    /* Save session ASSERTION_ID information. */
+    ret = am_cache_env_append(session, "ASSERTION_ID", assertion->ID);
     if(ret != OK) {
         return ret;
     }
@@ -1830,6 +1972,13 @@ static int am_handle_reply_common(request_rec *r, LassoLogin *login,
 
     rc = am_validate_conditions(r, assertion,
         LASSO_PROVIDER(LASSO_PROFILE(login)->server)->ProviderID);
+
+    if (rc != OK) {
+        lasso_login_destroy(login);
+        return rc;
+    }
+
+    rc = am_validate_unique_assertion_id(r, assertion);
 
     if (rc != OK) {
         lasso_login_destroy(login);
@@ -2895,6 +3044,11 @@ static int am_init_authn_request_common(request_rec *r,
                           "adding AuthnContextClassRef %s to the "
                           "AuthnRequest", ref);
         }
+
+        if (dir_cfg->authn_context_comparison_type != NULL) {
+            lasso_assign_string(request->RequestedAuthnContext->Comparison,
+                dir_cfg->authn_context_comparison_type);
+        }
     }
 
     LASSO_PROFILE(login)->msg_relayState = g_strdup(return_to_url);
@@ -3536,6 +3690,8 @@ int am_handler(request_rec *r)
          * with version 0.0.6 and older.
          */
         return am_handle_logout(r);
+    } else if(!strcmp(endpoint, "invalidate")) {
+        return am_handle_invalidate(r);
     } else if(!strcmp(endpoint, "login")) {
         return am_handle_login(r);
     } else if(!strcmp(endpoint, "probeDisco")) {

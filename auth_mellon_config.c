@@ -1,7 +1,7 @@
 /*
  *
  *   auth_mellon_config.c: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright Â© 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -35,6 +35,11 @@ static const char *default_endpoint_path = "/mellon/";
  * you change this.
  */
 static const char *default_user_attribute = "NAME_ID";
+
+/* This is the default prefix to use for attributes received from the
+ * server. Customizable using the MellonEnvPrefix option
+ */
+static const char *default_env_prefix = "MELLON_";
 
 /* This is the default name of the cookie which mod_auth_mellon will set.
  * If you change this, then you should also update the description of the
@@ -105,6 +110,13 @@ static const int default_env_vars_count_in_n = -1;
 /* The default list of trusted redirect domains. */
 static const char * const default_redirect_domains[] = { "[self]", NULL };
 
+/* The default setting to enabled the invalidation session endpoint
+ */
+static const int default_enabled_invalidation_session = 0;
+
+/* The default setting to send the Expect Header.
+ */
+static const int default_send_expect_header = 1;
 
 /* This function handles configuration directives which set a 
  * multivalued string slot in the module configuration (the destination
@@ -575,6 +587,8 @@ static const char *am_set_samesite_slot(cmd_parms *cmd,
         d->cookie_samesite = am_samesite_lax;
     } else if(!strcasecmp(arg, "strict")) {
         d->cookie_samesite = am_samesite_strict;
+    } else if(!strcasecmp(arg, "none")) {
+        d->cookie_samesite = am_samesite_none;
     } else {
         return "The MellonCookieSameSite parameter must be 'lax' or 'strict'";
     }
@@ -754,6 +768,42 @@ static const char *am_set_setenv_no_prefix_slot(cmd_parms *cmd,
     return NULL;
 }
 
+/* This function handles the MellonAuthnContextComparisonType option.
+ * It could be set to "exact", "minimum", "maximum" or "better"
+ *
+ * Parameters:
+ *  cmd_parms *cmd       The command structure for this configuration
+ *                       directive.
+ *  void *struct_ptr     Pointer to the current directory configuration.
+ *  const char *arg      The string argument following this configuration
+ *                       directive in the configuraion file.
+ *
+ * Returns:
+ *  NULL on success or an error string if the argument is wrong.
+ */
+static const char *am_set_authn_context_comparison_type_slot(cmd_parms *cmd,
+                                      void *struct_ptr,
+                                      const char *arg)
+{
+    am_dir_cfg_rec *d = (am_dir_cfg_rec *)struct_ptr;
+
+    if (!strcasecmp(arg, LASSO_LIB_AUTHN_CONTEXT_COMPARISON_EXACT)) {
+        d->authn_context_comparison_type =
+            LASSO_LIB_AUTHN_CONTEXT_COMPARISON_EXACT;
+    } else if (!strcasecmp(arg, LASSO_LIB_AUTHN_CONTEXT_COMPARISON_MINIMUM)) {
+        d->authn_context_comparison_type =
+            LASSO_LIB_AUTHN_CONTEXT_COMPARISON_MINIMUM;
+    } else if (!strcasecmp(arg, LASSO_LIB_AUTHN_CONTEXT_COMPARISON_MAXIMUM)) {
+        d->authn_context_comparison_type =
+            LASSO_LIB_AUTHN_CONTEXT_COMPARISON_MAXIMUM;
+    } else if (!strcasecmp(arg, LASSO_LIB_AUTHN_CONTEXT_COMPARISON_BETTER)) {
+        d->authn_context_comparison_type =
+            LASSO_LIB_AUTHN_CONTEXT_COMPARISON_BETTER;
+    } else {
+        return "parameter must be 'exact', 'minimum', 'maximum' or 'better'";
+    }
+    return NULL;
+}
 
 /* This function decodes MellonCond flags, such as [NOT,REG]
  *
@@ -1197,6 +1247,70 @@ static const char *am_set_signature_method_slot(cmd_parms *cmd,
     return NULL;
 }
 
+/* This function handles the MellonEnabledInvalidateSessionEndpoint configuration directive.
+ * This directive can be set to "on" or "off" (default).
+ *
+ * Parameters:
+ *  cmd_parms *cmd       The command structure for this configuration
+ *                       directive.
+ *  void *struct_ptr     Pointer to the current directory configuration.
+ *  const char *arg      The string argument following this configuration
+ *                       directive in the configuraion file.
+ *
+ * Returns:
+ *  NULL on success or an error string if the argument is wrong.
+ */
+static const char *am_set_invalidate_session_slots(cmd_parms *cmd,
+                                                   void *struct_ptr,
+                                                   const char *arg)
+{
+    am_dir_cfg_rec *d = (am_dir_cfg_rec *)struct_ptr;
+
+    if (strcasecmp(arg, "on") == 0) {
+        d->enabled_invalidation_session = 1;
+    }
+    else if (strcasecmp(arg, "off") == 0) {
+        d->enabled_invalidation_session = 0;
+    } else {
+        return apr_psprintf(cmd->pool, "%s: must be one of: 'on', 'off'",
+                            cmd->cmd->name);
+    }
+
+    return NULL;
+}
+
+/* This function handles the MellonSendExpectHeader  configuration directive.
+ * This directive can be set to "on" (default) or "off".
+ *
+ * Parameters:
+ *  cmd_parms *cmd       The command structure for this configuration
+ *                       directive.
+ *  void *struct_ptr     Pointer to the current directory configuration.
+ *  const char *arg      The string argument following this configuration
+ *                       directive in the configuraion file.
+ *
+ * Returns:
+ *  NULL on success or an error string if the argument is wrong.
+ */
+static const char *am_set_send_expect_header_slots(cmd_parms *cmd,
+                                                   void *struct_ptr,
+                                                   const char *arg)
+{
+    am_dir_cfg_rec *d = (am_dir_cfg_rec *)struct_ptr;
+
+    if (strcasecmp(arg, "on") == 0) {
+        d->send_expect_header = 1;
+    }
+    else if (strcasecmp(arg, "off") == 0) {
+        d->send_expect_header = 0;
+    } else {
+        return apr_psprintf(cmd->pool, "%s: must be one of: 'on', 'off'",
+                            cmd->cmd->name);
+    }
+
+    return NULL;
+}
+
 /* This array contains all the configuration directive which are handled
  * by auth_mellon.
  */    
@@ -1372,8 +1486,10 @@ const command_rec auth_mellon_commands[] = {
         am_set_setenv_slot,
         NULL,
         OR_AUTHCFG,
-        "Renames attributes received from the server while retaining prefix MELLON_. The format is"
-        " MellonSetEnv <old name> <new name>."
+        "Renames attributes received from the server while retaining the"
+        " prefix. The prefix defaults to MELLON_ but can be changed with"
+        " MellonEnvPrefix."
+        " The format is MellonSetEnv <old name> <new name>."
         ),
      AP_INIT_TAKE2(
         "MellonSetEnvNoPrefix",
@@ -1382,6 +1498,13 @@ const command_rec auth_mellon_commands[] = {
         OR_AUTHCFG,
         "Renames attributes received from the server without adding prefix. The format is"
         " MellonSetEnvNoPrefix <old name> <new name>."
+        ),
+    AP_INIT_TAKE1(
+        "MellonEnvPrefix",
+        ap_set_string_slot,
+        (void *)APR_OFFSETOF(am_dir_cfg_rec, env_prefix),
+        OR_AUTHCFG,
+        "The prefix to use for attributes received from the server."
         ),
     AP_INIT_FLAG(
         "MellonSessionDump",
@@ -1587,6 +1710,13 @@ const command_rec auth_mellon_commands[] = {
         "A list of AuthnContextClassRef to request in the AuthnRequest and "
         "to validate upon reception of an Assertion"
         ),
+    AP_INIT_TAKE1(
+        "MellonAuthnContextComparisonType",
+        am_set_authn_context_comparison_type_slot,
+        NULL,
+        OR_AUTHCFG,
+        "An AuthnContextComparisonType attribute as part of the AuthnRequest."
+        ),
     AP_INIT_FLAG(
         "MellonSubjectConfirmationDataAddressCheck",
         ap_set_flag_slot,
@@ -1660,6 +1790,21 @@ const command_rec auth_mellon_commands[] = {
         OR_AUTHCFG,
         "Signature method used to sign SAML messages sent by Mellon"
         ),
+    AP_INIT_TAKE1(
+        "MellonEnabledInvalidateSessionEndpoint",
+        am_set_invalidate_session_slots,
+        NULL,
+        OR_AUTHCFG,
+        "Enabled the session invalidation endpoint. Default is 'off'."
+        ),
+    AP_INIT_TAKE1(
+        "MellonSendExpectHeader",
+        am_set_send_expect_header_slots,
+        NULL,
+        OR_AUTHCFG,
+        "Send the Expect Header. Default is 'on'."
+        ),
+
     {NULL}
 };
 
@@ -1722,6 +1867,7 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->cookie_path = NULL;
     dir->cookie_samesite = am_samesite_default;
     dir->envattr   = apr_hash_make(p);
+    dir->env_prefix = default_env_prefix;
     dir->userattr  = default_user_attribute;
     dir->idpattr  = NULL;
     dir->signature_method = inherit_signature_method;
@@ -1757,6 +1903,7 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->inherit_server_from = dir;
     dir->server = NULL;
     dir->authn_context_class_ref = apr_array_make(p, 0, sizeof(char *));
+    dir->authn_context_comparison_type = NULL;
     dir->subject_confirmation_data_address_check = inherit_subject_confirmation_data_address_check;
     dir->send_cache_control_header = inherit_send_cache_control_header;
     dir->do_not_verify_logout_signature = apr_hash_make(p);
@@ -1764,6 +1911,10 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->redirect_domains = default_redirect_domains;
 
     dir->ecp_send_idplist = inherit_ecp_send_idplist;
+
+    dir->enabled_invalidation_session = default_enabled_invalidation_session;
+
+    dir->send_expect_header = default_send_expect_header;
 
     return dir;
 }
@@ -1876,6 +2027,10 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
                                      (apr_hash_count(add_cfg->envattr) > 0) ?
                                      add_cfg->envattr :
                                      base_cfg->envattr);
+
+    new_cfg->env_prefix = (add_cfg->env_prefix != default_env_prefix ?
+                           add_cfg->env_prefix :
+                           base_cfg->env_prefix);
 
     new_cfg->userattr = (add_cfg->userattr != default_user_attribute ?
                          add_cfg->userattr :
@@ -1998,6 +2153,10 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
                              add_cfg->authn_context_class_ref :
                              base_cfg->authn_context_class_ref);
 
+    new_cfg->authn_context_comparison_type = (add_cfg->authn_context_comparison_type != NULL ?
+                        add_cfg->authn_context_comparison_type :
+                        base_cfg->authn_context_comparison_type);
+
     new_cfg->do_not_verify_logout_signature = apr_hash_copy(p, 
                              (apr_hash_count(add_cfg->do_not_verify_logout_signature) > 0) ?
                              add_cfg->do_not_verify_logout_signature :
@@ -2017,6 +2176,16 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
         (add_cfg->redirect_domains != default_redirect_domains ?
          add_cfg->redirect_domains :
          base_cfg->redirect_domains);
+
+    new_cfg->enabled_invalidation_session =
+        (add_cfg->enabled_invalidation_session != default_enabled_invalidation_session ?
+         add_cfg->enabled_invalidation_session :
+         base_cfg->enabled_invalidation_session);
+
+    new_cfg->send_expect_header =
+        (add_cfg->send_expect_header != default_send_expect_header ?
+         add_cfg->send_expect_header :
+         base_cfg->send_expect_header);
 
     return new_cfg;
 }

@@ -1,3 +1,107 @@
+Version 0.16.0
+---------------------------------------------------------------------------
+
+Enhancements:
+
+ * The MellonCookieSameSite option accepts a new valid "None". This is intended
+   to be used together with "MellonSecureCookie On". With some newer browsers,
+   only cookies with "SameSite=None; Secure" would be available for cross-site
+   access.
+
+ * A new option MellonEnabledInvalidateSessionEndpoint was added. When this
+   option is enabled, then a user can invalidate their session locally by
+   calling the "/invalidate" endpoint.
+
+Version 0.15.0
+---------------------------------------------------------------------------
+
+Security fixes:
+
+* [CVE-2019-13038] Redirect URL validation bypass
+
+  Version 0.14.1 and older of mod_auth_mellon allows the redirect URL
+  validation to be bypassed by specifying an URL formatted as
+  "http:www.hostname.com". In this case, the APR parsing utility
+  would parse the scheme as http, host as NULL and path as www.hostname.com.
+  Browsers, however, interpret the URL differently and redirect to
+  www.hostname.com. This could be reproduced with:
+     https://application.com/mellon/login?ReturnTo=http:www.hostname.com
+
+  This version fixes that issue by rejecting all URLs with
+  scheme, but no host name.
+
+Enhancements:
+
+ * A XSLT script that allows converting attribute maps from Shibboleth
+   to a set of MellonSetEnvNoPrefix entries was added. The script can
+   be found at doc/mellon-attribute-map.xsl
+
+ * A new configuration option MellonEnvPrefix was added. This option allows
+   you to configure the variable prefix, which normally defaults to MELLON_
+
+ * A new configuration option MellonAuthnContextComparisonType was added.
+   This option allows you to set the "Comparison" attribute within
+   the AuthnRequest
+
+Notable bug fixes:
+
+  * Compilation issues on Solaris were fixed
+
+
+Version 0.14.2
+---------------------------------------------------------------------------
+
+Security fixes:
+
+* [CVE-2019-3878] Authentication bypass when Apache is used as a
+  reverse proxy
+
+  If Apache is configured as a reverse proxy with mod_auth_mellon for
+  authentication, the authentication can be bypassed by adding SAML
+  2.0 ECP headers to the request.
+
+  This vulnerability affects mod_auth_mellon 0.11.0 and newer.
+
+  This vulnerability is due to both mod_auth_mellon and mod_proxy
+  registering as handlers for the requests, with the same
+  priority. When mod_auth_mellon handles the request first, it will
+  trigger a ECP authentication request. If mod_proxy handles it first,
+  it will forward it to the backend server.
+
+  Which module handles it first depends on the order modules are
+  loaded by Apache.
+
+  This vulnerability is fixes by specifically registering that the
+  mod_auth_mellon handler should run before mod_proxy.
+
+  Thanks to Jakub Hrozek and John Dennis at RedHat for fixing this
+  vulnerability.
+
+* [CVE-2019-3877] Redirect URL validation bypass
+
+  Version 0.14.1 and older of mod_auth_mellon allows the redirect URL
+  validation to be bypassed by specifying an URL with backslashes
+  instead of forward slashes. Browsers silently convert backslashes to
+  forward slashes, which allows an attacker to bypass the redirect URL
+  validation by using `%5c` in the ReturnTo-parameter. E.g.:
+
+    https://sp.example.org/mellon/logout?ReturnTo=https:%5c%5cmalicious.example.org/
+
+  This version fixes that issue by rejecting all URLs with
+  backslashes.
+
+  Thanks to Eric Chamberland for discovering this vulnerability.
+
+
+Version 0.14.1
+---------------------------------------------------------------------------
+
+Bug fixes:
+
+* Fix environment variables in MellonCond
+* Fix detection of AJAX requests
+* Fix trailing semi-colon in Set-Cookie header
+
 Version 0.14.0
 ---------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 /*
  *
  *   auth_mellon.h: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright Â© 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "config.h"
 
 #include <stdbool.h>
+#include <strings.h>
 
 #include <lasso/lasso.h>
 #include <lasso/xml/saml-2.0/samlp2_authn_request.h>
@@ -95,6 +96,11 @@ typedef enum {
 } am_diag_flags_t;
 #endif
 
+
+/* Disable SameSite Environment Value */
+#define AM_DISABLE_SAMESITE_ENV_VAR "MELLON_DISABLE_SAMESITE"
+
+
 /* This is the length of the id we use (for session IDs and
  * replaying POST data).
  */
@@ -163,7 +169,8 @@ typedef enum {
 typedef enum {
   am_samesite_default,
   am_samesite_lax,
-  am_samesite_strict
+  am_samesite_strict,
+  am_samesite_none,
 } am_samesite_t;
 
 typedef enum {
@@ -237,6 +244,7 @@ typedef struct am_dir_cfg_rec {
     am_samesite_t cookie_samesite;
     apr_array_header_t *cond;
     apr_hash_t *envattr;
+    const char *env_prefix;
     const char *userattr;
     const char *idpattr;
     LassoSignatureMethod signature_method;
@@ -293,6 +301,9 @@ typedef struct am_dir_cfg_rec {
     /* AuthnContextClassRef list */
     apr_array_header_t *authn_context_class_ref;
 
+    /* AuthnContextComparisonType */
+    const char *authn_context_comparison_type;
+
     /* Controls the checking of SubjectConfirmationData.Address attribute */
     int subject_confirmation_data_address_check;
 
@@ -313,6 +324,13 @@ typedef struct am_dir_cfg_rec {
 
     /* List of domains we can redirect to. */
     const char * const *redirect_domains;
+
+    /* Enabled the session invalidate endpoint. */
+    int enabled_invalidation_session;
+
+    /* Send Expect Header. */
+    int send_expect_header;
+
 } am_dir_cfg_rec;
 
 /* Bitmask for PAOS service options */
@@ -368,7 +386,8 @@ typedef struct am_cache_entry_t {
 
 typedef enum { 
     AM_CACHE_SESSION, 
-    AM_CACHE_NAMEID 
+    AM_CACHE_NAMEID,
+    AM_CACHE_ASSERTIONID
 } am_cache_key_t;
 
 /* Type for configuring environment variable names */
@@ -471,6 +490,8 @@ const char *am_cache_get_lasso_session(am_cache_entry_t *session);
 am_cache_entry_t *am_get_request_session(request_rec *r);
 am_cache_entry_t *am_get_request_session_by_nameid(request_rec *r, 
                                                    char *nameid);
+am_cache_entry_t *am_get_request_session_by_assertionid(request_rec *r,
+                                                        char *assertionid);
 am_cache_entry_t *am_new_request_session(request_rec *r);
 void am_release_request_session(request_rec *r, am_cache_entry_t *session);
 void am_delete_request_session(request_rec *r, am_cache_entry_t *session);

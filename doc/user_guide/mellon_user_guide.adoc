@@ -1634,7 +1634,7 @@ Mellon authentication. This requires at a minimum these 3 directives:
 
 === How is Mellon metadata created? [[metadata_creation]]
 
-The purpose of SAML metadata is describe in <<metadata>>. An annotated
+The purpose of SAML metadata is described in <<metadata>>. An annotated
 example of Mellon metadata is presented in <<sp_metadata>>. There are
 multiple ways one can create Mellon metadata:
 
@@ -2009,11 +2009,13 @@ attributes.
   assertion to a name of your choosing when it is placed in the Apache
   environment. This is controlled by `MellonSetEnv` and
   `MellonSetEnvNoPrefix` directives.  The distinction
-  is `MellonSetEnv` always prepends the `MELLON_` prefix to the
+  is `MellonSetEnv` always prepends a prefix to the
   environment variable name to help to prevent name collisions. The
+  prefix defaults to `MELLON_` and can be configured using the
+  `MellonEnvPrefix` configuration option. The
   `MellonSetEnvNoPrefix` directive also remaps the assertion name to a
   name of your choosing but it omits prepending the environment
-  variable name with `MELLON_`. See <<map_assertion_attr_name>>
+  variable name with the prefix. See <<map_assertion_attr_name>>
 
 Using the <<assertion_response,assertion example>> Mellon places these
 environment variables in the Apache environment. See
@@ -2098,10 +2100,12 @@ and `MellonSetEnvNoPrefix` directives. These allow you to rename an
 assertion attribute to a name of your choosing. The `MellonSetEnv`
 directive follows the same convention as all other assertion
 attributes added by Mellon in that it always prefixes the environment
-variable name with `MELLON_` to help avoid name collisions in the
+variable name with a configurable prefix, which defaults to `MELLON_` to help avoid name collisions in the
 Apache environment. However sometimes you do not want the `MELLON_`
-prefix added and instead you want to use exactly the environment
-variable name as specified., `MellonSetEnvNoPrefix` serves this role.
+prefix added. In case you simply want the variables prefixed with
+a different string, use the `MellonEnvPrefix` configuration option. If,
+instead you want to use exactly the environment variable name as specified.,
+`MellonSetEnvNoPrefix` serves this role.
 
 To illustrate let's look at an example. Suppose your web app is
 expecting an attribute which is the user's last name, specifically it
@@ -2118,6 +2122,20 @@ MellonSetEnvNoPrefix REMOTE_USER_LASTNAME sn
 
 Also see <<set_remote_user>> for an example of setting the `REMOTE_USER`
 environment variable using `MellonSetEnvNoPrefix`.
+
+The `MellonEnvPrefix` variable might be useful e.g. if you
+are migrating from a different SP which used its own prefix
+for the variables passed by the IdP. For example, to prefix
+all variables with `NOLLEM_` you would use:
+
+----
+MellonEnvPrefix NOLLEM_
+----
+
+If you recieved an attribute-map.xml from your IDP that uses the
+`urn:mace:shibboleth:2.0:attribute-map` namespace, it can be converted
+to `MellonSetEnvNoPrefix` entries with `docs/mellon-attribute-map.xsl`
+and loaded into your webserver configuration.
 
 === Using Mellon to apply constraints [[assertion_constraints]]
 
@@ -2944,7 +2962,7 @@ Currently Mellon diagnostics supports these new Mellon
 directives. These directives are module level and as such should be
 declared outside of any location blocks in your Apache configuration.
 
-MellonDiagnosticFile::
+MellonDiagnosticsFile::
 If Mellon was built with diagnostic capability then diagnostic is
 written here, it may be either a filename or a pipe.  If it's a
 filename then the resulting path is relative to the ServerRoot.  If
@@ -2952,7 +2970,7 @@ the value is preceeded by the pipe character "|" it should be followed
 by a path to a program to receive the log information on its standard
 input.  Default: `logs/mellon_diagnostics`
 
-MellonDiagnosticEnable::
+MellonDiagnosticsEnable::
 If Mellon was built with diagnostic capability then this is a list of
 words controlling diagnostic output.  Currently only `On` and `Off` are
 supported.  Default: `Off`
@@ -2961,12 +2979,12 @@ To enable diagnostic logging add this line to your Apache
 configuration file where you keep your Mellon configuration.
 
 ----
-MellonDiagnosticEnable On
+MellonDiagnosticsEnable On
 ----
 
 Restart Apache and perform some operation that involves Mellon. In
 your Apache log directory will be a file called `mellon_diagnostics`
-(or whatever `MellonDiagnosticFile` was set to).
+(or whatever `MellonDiagnosticsFile` was set to).
 
 IMPORTANT: Diagnostic logging may potentially contain security
 sensitive information. Diagnostic logging is verbose and will generate
@@ -3582,6 +3600,7 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
   MellonProbeDiscoveryTimeout (probe_discovery_timeout): -1
   MellonProbeDiscoveryIdP (probe_discovery_idp): 0 items
   MellonAuthnContextClassRef (authn_context_class_ref): 0 items
+  MellonAuthnContextComparisonType (authn_context_comparison_type): (null)
   MellonSubjectConfirmationDataAddressCheck (subject_confirmation_data_address_check): On
   MellonDoNotVerifyLogoutSignature (do_not_verify_logout_signature): 0 items
   MellonPostReplay (post_replay): On

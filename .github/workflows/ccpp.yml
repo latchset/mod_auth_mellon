@@ -1,0 +1,23 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: update apt cache
+      run: sudo apt-get update
+    - name: install dependencies
+      run: sudo apt-get install apache2-dev liblasso3-dev libcurl4-openssl-dev
+    - name: autoreconf
+      run: autoreconf -i -f
+    - name: autoconf
+      run: autoconf
+    - name: configure
+      run: ./configure
+    - name: make
+      run: make

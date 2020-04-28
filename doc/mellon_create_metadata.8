@@ -1,0 +1,25 @@
+.TH man 8 "25 January 2020" "1.0" "mellon_create_metadata manual page"
+.SH NAME
+mellon_create_metadata \- Populate inital SP metadata for mod_auth_mellon 
+.SH SYNOPSIS
+mellon_create_metadata ENTITY-ID ENDPOINT-URL
+.SH DESCRIPTION
+The Apache module mod_auth_mellon provides a SAML 2.0 service provider (SP).
+This service provider needs metadata to function. You can create the initial
+configuration for this with mellon_create_metadata. Three files will be
+created in the current directory. A public and private key pair, and a
+boilerplate metadata xml file with the public key and the URLs of this
+installation, that can be further edited at will.
+
+You can reference these files in the configuration options
+MellonSPPrivateKeyFile, MellonSPCertFile and MellonSPMetadataFile,
+respectively.
+.SH OPTIONS
+Specify the desired entity ID of the SP. This needs to be globally unique
+and is therefore an URL or URN, probably with your own domain in it.
+The endpoint URL is the full URL to your mellon installation. This normally
+ends with "/mellon" unless configured otherwise.
+.SH EXAMPLE
+mellon_create_metadata urn:someservice https://sp.example.org/mellon
+.SH AUTHOR
+Thijs Kinkhorst <thijs.kinkhorst@surfnet.nl>

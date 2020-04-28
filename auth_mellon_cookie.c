@@ -61,7 +61,7 @@ static const char *am_cookie_params(request_rec *r)
     const char *cookie_samesite = "";
     const char *cookie_expires = "";
     char rbuf[APR_RFC822_DATE_LEN + 1];
-    
+    const char *env_var_value = NULL;
     am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
 
     if (cfg->cookie_domain) {
@@ -72,10 +72,21 @@ static const char *am_cookie_params(request_rec *r)
         cookie_path = cfg->cookie_path;
     }
 
-    if (cfg->cookie_samesite == am_samesite_lax) {
-        cookie_samesite = "; SameSite=Lax";
-    } else if (cfg->cookie_samesite == am_samesite_strict) {
-        cookie_samesite = "; SameSite=Strict";
+    if (r->subprocess_env != NULL){
+        env_var_value = apr_table_get(r->subprocess_env,
+                        AM_DISABLE_SAMESITE_ENV_VAR);
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                     "%s : %s", AM_DISABLE_SAMESITE_ENV_VAR, env_var_value);
+    }
+
+    if (env_var_value == NULL){
+        if (cfg->cookie_samesite == am_samesite_lax) {
+            cookie_samesite = "; SameSite=Lax";
+        } else if (cfg->cookie_samesite == am_samesite_strict) {
+            cookie_samesite = "; SameSite=Strict";
+        } else if (cfg->cookie_samesite == am_samesite_none) {
+            cookie_samesite = "; SameSite=None";
+        }
     }
 
     secure_cookie = cfg->secure;

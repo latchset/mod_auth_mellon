@@ -36,6 +36,7 @@ DISTFILES=$(SRC) \
 	COPYING \
 	NEWS \
 	mellon_create_metadata.sh \
+	doc/mellon_create_metadata.8 \
 	$(USER_GUIDE_FILES)
 
 all:	mod_auth_mellon.la

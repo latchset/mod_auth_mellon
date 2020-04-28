@@ -77,7 +77,7 @@ enabled. Most likely you also want authz_user to be enabled.
 After you have added the LoadModule directive, you must add configuration
 for mod_auth_mellon. The following is an example configuration:
 
-```
+```ApacheConf
 ###########################################################################
 # Global configuration for mod_auth_mellon. This configuration is shared by
 # every virtual server and location in this instance of apache.
@@ -223,10 +223,29 @@ MellonDiagnosticsEnable Off
 
         # MellonCookieSameSite allows control over the SameSite value used
         # for the authentication cookie.
-        # The setting accepts values of "Strict" or "Lax"
-        # If not set, the SameSite attribute is not set on the cookie.
+        # The setting accepts values of "Strict", "Lax", or "None".
+        # When using none, you should set "MellonSecureCookie On" to prevent
+        # compatibility issues with newer browsers.
+        # If not set, the SameSite attribute is not set on the cookie. In newer
+        # browsers, this may cause SameSite to default to "Lax"
         # Default: not set
         # MellonCookieSameSite lax
+
+        # Some browsers will reject cookies if SameSite is specified.
+        # The MELLON_DISABLE_SAMESITE environment variable suppresses
+        # setting of SameSite cookies. You can use the following directives
+        # to set it.
+        # BrowserMatch "\(iP.+; CPU .*OS 12[_\d]*.*\) AppleWebKit\/" MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "\(Macintosh;.*Mac OS X 10_14[_\d]*.*\) AppleWebKit\/" MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "Outlook-iOS" MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "^Mozilla\/[\.\d]+ \(Macintosh;.*Mac OS X 10_14[_\d]*.*\) .* AppleWebKit\/[\.\d]+ \(KHTML, like Gecko\)$" MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "UCBrowser\/(8|9|10|11)\.(\d+)\.(\d+)[\.\d]* " MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "UCBrowser\/12\.13\.[0-1][\.\d]* " MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "UCBrowser\/12\.1[0-2]\.(\d+)[\.\d]* " MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "UCBrowser\/12\.\d\.(\d+)[\.\d]* " MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "Chrom[^ \/]+\/6[0-6][\.\d]* " MELLON_DISABLE_SAMESITE=1
+        # BrowserMatch "Chrom[^ \/]+\/5[1-9][\.\d]* " MELLON_DISABLE_SAMESITE=1
+
 
         # MellonUser selects which attribute we should use for the username.
         # The username is passed on to other apache modules and to the web
@@ -257,6 +276,11 @@ MellonDiagnosticsEnable Off
         # You can list multiple MellonSetEnvNoPrefix directives.
         # Default. None set.
         MellonSetEnvNoPrefix "DISPLAY_NAME" "displayName"
+
+        # MellonEnvPrefix changes the string the variables passed from the
+        # IdP are prefixed with.
+        # Default: MELLON_
+        MellonEnvPrefix "NOLLEM_"
 
         # MellonMergeEnvVars merges multiple values of environment variables
         # set using MellonSetEnv into single variable:
@@ -532,6 +556,10 @@ MellonDiagnosticsEnable Off
         # MellonAuthnContextClassRef "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
         # MellonAuthnContextClassRef "urn:oasis:names:tc:SAML:2.0:ac:classes:SoftwarePKI"
 
+        # This option will set the "Comparsion" attribute within the AuthnRequest
+        # It could be set to "exact", "minimum", "maximum" or "better"
+        # MellonAuthnContextComparisonType "minimum"
+
         # MellonSubjectConfirmationDataAddressCheck is used to control
         # the checking of client IP address against the address returned by the
         # IdP in Address attribute of the SubjectConfirmationData node. Can be useful if your SP is
@@ -740,13 +768,43 @@ This will return the user to "https://www.example.org/logged_out.html"
 after the logout operation has completed.
 
 
+## Invalidating session
+It is possible to invalidate the current mod_auth_mellon session, 
+without calling SLO. The mod_auth_mellon cookie session will be 
+invalidated and the session will be removed from the mod_auth_mellon cache. 
+SLO will not be possible after the mod_auth_mellon session is invalidated.
+If this functionality is enabled, invalidate the session by calling 
+the endpoint "<endpoint path>/invalidate?ReturnTo=<valid url>".
+The "ReturnTo" parameter is required.
+
+Here is a sample configuration to enabled this feature:
+```ApacheConf
+MellonEnabledInvalidateSessionEndpoint On
+```
+Default value is Off
+
+
+## Send Expect Header
+The Expect Header save an additional network round-trip and is thus a good idea when
+the request isn't extremely large and the probability for rejection is low.
+For some Apache server version, the Expect Header is not properly managed and the curl command will 
+wait for 1 sec. before sending the body of the request. 
+If the Expect Header is not present, there won't be wait time in the HTTP-Artifact binding.
+
+Here is a sample configuration to not send the Expect header:
+```ApacheConf
+MellonSendExpectHeader Off
+```
+Default value is On
+
+
 ## Probe IdP discovery 
 
 mod_auth_mellon has an IdP probe discovery service that sends HTTP GET
 to IdP and picks the first that answers. This can be used as a poor
 man's failover setup that redirects to your organisation internal IdP. 
 Here is a sample configuration:
-```
+```ApacheConf
 MellonEndpointPath "/saml"
 (...)
 MellonDiscoveryUrl "/saml/probeDisco"
@@ -764,7 +822,7 @@ you will want to configure external IdP in mod_auth_mellon, but not
 use them for IdP probe discovery. The MellonProbeDiscoveryIdP 
 directive can be used to limit the usable IdP for probe discovery:
 
-```
+```ApacheConf
 MellonEndpointPath "/saml"
 (...)
 MellonDiscoveryUrl "/saml/probeDisco"
@@ -815,7 +873,7 @@ The below snippet will allow for preemptive basic auth (such as from a REST clie
 for the "/auth" path, but if accessed interactively will trigger SAML auth with
 mod_auth_mellon. 
 
-```
+```ApacheConf
 <Location />
   MellonEnable "info"
   MellonVariable "cookie"
@@ -889,9 +947,10 @@ There's a mailing list for discussion and support.
 ## Reporting security vulnerabilities
 
 For reporting security vulnerabilities in mod_auth_mellon, please contact
-the maintainer directly at the following email address:
+the maintainers directly at the following email address:
 
-  olav.morken@uninett.no
+  jhrozek@redhat.com
+  simo@redhat.com
 
 This allows us to coordinate the disclosure of the vulnerability with the
 fixes for the vulnerability.

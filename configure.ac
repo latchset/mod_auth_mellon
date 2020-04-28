@@ -1,4 +1,4 @@
-AC_INIT([mod_auth_mellon],[0.14.0],[olav.morken@uninett.no])
+AC_INIT([mod_auth_mellon],[0.16.0],[https://github.com/latchset/mod_auth_mellon/issues])
 AC_CONFIG_HEADERS([config.h])
 
 # We require support for C99.

@@ -214,6 +214,7 @@ am_diag_samesite_str(request_rec *r, am_samesite_t samesite)
     case am_samesite_default: return "default";
     case am_samesite_lax:     return "lax";
     case am_samesite_strict:  return "strict";
+    case am_samesite_none:    return "none";
     default:
         return apr_psprintf(r->pool, "unknown (%d)", samesite);
     }
@@ -419,7 +420,7 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
                     indent(level+1), cfg->varname);
     apr_file_printf(diag_cfg->fd,
                     "%sMellonSecureCookie (secure): %s\n",
-                    indent(level+1), cfg->secure ? "On":"Off"); /* FIXME, should be combined? */
+                    indent(level+1), cfg->secure ? "On":"Off");
     apr_file_printf(diag_cfg->fd,
                     "%sMellonSecureCookie (httpd_only): %s\n",
                     indent(level+1), cfg->http_only ? "On":"Off");
@@ -442,6 +443,9 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
                     "%sMellonCookieSameSite (cookie_samesite): %s\n",
                     indent(level+1),
                     am_diag_samesite_str(r, cfg->cookie_samesite));
+    apr_file_printf(diag_cfg->fd,
+                    "%sMellonEnvPrefix (env_prefix): %s\n",
+                    indent(level+1), cfg->env_prefix);
 
     apr_file_printf(diag_cfg->fd,
                     "%sMellonCond (cond): %d items\n",
@@ -466,7 +470,7 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
         apr_hash_this(hash_item, (void *)&key, NULL, (void *)&envattr_conf);
 
         if (envattr_conf->prefixed) {
-            name = apr_pstrcat(r->pool, "MELLON_",
+            name = apr_pstrcat(r->pool, cfg->env_prefix,
                                envattr_conf->name, NULL);
         } else {
             name = envattr_conf->name;
@@ -617,7 +621,9 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
                         "%s[%2d]: %s\n",
                         indent(level+2), i, context_class);
     }
-
+    apr_file_printf(diag_cfg->fd,
+                    "%sMellonAuthnContextComparisonType (authn_context_comparison_type): %s\n",
+                    indent(level+1), cfg->authn_context_comparison_type);
     apr_file_printf(diag_cfg->fd,
                     "%sMellonSubjectConfirmationDataAddressCheck"
                     " (subject_confirmation_data_address_check): %s\n",
@@ -803,9 +809,10 @@ const char *
 am_diag_cache_key_type_str(am_cache_key_t key_type)
 {
     switch(key_type) {
-    case AM_CACHE_SESSION: return "session";
-    case AM_CACHE_NAMEID : return "name id";
-    default:               return "unknown";
+    case AM_CACHE_SESSION:      return "session";
+    case AM_CACHE_NAMEID:       return "name id";
+    case AM_CACHE_ASSERTIONID:  return "assertion id";
+    default:                    return "unknown";
     }
 }
 
@@ -1102,6 +1109,7 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
     am_req_cfg_rec *req_cfg = am_get_req_cfg(r);
 
     const char *name_id = NULL;
+    const char *assertion_id = NULL;
 
     if (!AM_DIAG_ENABLED(diag_cfg)) return;
     if (!am_diag_initialize_req(r, diag_cfg, req_cfg)) return;
@@ -1112,6 +1120,7 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
 
     if (entry) {
         name_id = am_cache_env_fetch_first(entry, "NAME_ID");
+        assertion_id = am_cache_env_fetch_first(entry, "ASSERTION_ID");
 
         apr_file_printf(diag_cfg->fd,
                         "%skey: %s\n",
@@ -1119,6 +1128,9 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
         apr_file_printf(diag_cfg->fd,
                         "%sname_id: %s\n",
                         indent(level+1), name_id);
+        apr_file_printf(diag_cfg->fd,
+                        "%sassertion_id: %s\n",
+                        indent(level+1), assertion_id);
         apr_file_printf(diag_cfg->fd,
                         "%sexpires: %s\n",
                         indent(level+1),
