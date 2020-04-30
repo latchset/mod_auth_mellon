@@ -3261,8 +3261,13 @@ static int am_send_login_authn_request(request_rec *r, const char *idp,
     /* Add cookie for cookie test. We know that we should have
      * a valid cookie when we return from the IdP after SP-initiated
      * login.
+     * Ensure that SameSite is set to None for this cookie if SameSite
+     * is allowed to be set as the cookie otherwise gets lost on
+     * HTTP-POST binding messages.
      */
+    apr_table_setn(r->notes, AM_FORCE_SAMESITE_NONE_NOTE, "1");
     am_cookie_set(r, "cookietest");
+    apr_table_unset(r->notes, AM_FORCE_SAMESITE_NONE_NOTE);
 
     server = am_get_lasso_server(r);
     if(server == NULL) {

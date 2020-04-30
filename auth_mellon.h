@@ -100,6 +100,9 @@ typedef enum {
 /* Disable SameSite Environment Value */
 #define AM_DISABLE_SAMESITE_ENV_VAR "MELLON_DISABLE_SAMESITE"
 
+/* Force setting SameSite to None */
+#define AM_FORCE_SAMESITE_NONE_NOTE "MELLON_FORCE_SAMESITE_NONE"
+
 
 /* This is the length of the id we use (for session IDs and
  * replaying POST data).
