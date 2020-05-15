@@ -222,7 +222,15 @@ MellonDiagnosticsEnable Off
         # When using none, you should set "MellonSecureCookie On" to prevent
         # compatibility issues with newer browsers.
         # If not set, the SameSite attribute is not set on the cookie. In newer
-        # browsers, this may cause SameSite to default to "Lax"
+        # browsers, this may cause SameSite to default to "Lax".
+        # Note: Regardless of the value set here a fixed SameSite value of
+        # None is used for the cookie test. The cookie test, which is performed
+        # with a static value, should detect whether the user's client accepts
+        # cookies or not before the auth_mellon session is established and thus
+        # avoid a redirect loop. Using a fixed SameSite value of None ensures
+        # that the cookie with the static value does not get lost in the
+        # HTTP-POST binding request issued by the autosubmit form returned by
+        # the IDP.
         # Default: not set
         # MellonCookieSameSite lax
 
