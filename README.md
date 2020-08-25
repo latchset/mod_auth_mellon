@@ -310,15 +310,6 @@ MellonDiagnosticsEnable Off
         # Default: MellonEnvVarsSetCount Off
         MellonEnvVarsSetCount On
 
-        # If MellonSessionDump is set, then the SAML session will be
-        # available in the MELLON_SESSION environment variable
-        MellonSessionDump Off
- 
-        # If MellonSamlResponseDump is set, then the SAML authentication
-        # response will be available in the MELLON_SAML_RESPONSE environment 
-        # variable
-        MellonSamlResponseDump Off
- 
         # MellonRequire allows you to limit access to those with specific
         # attributes. The syntax is
         # 'MellonRequire <attribute name> <list of valid values>'.
