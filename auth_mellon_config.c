@@ -590,7 +590,7 @@ static const char *am_set_samesite_slot(cmd_parms *cmd,
     } else if(!strcasecmp(arg, "none")) {
         d->cookie_samesite = am_samesite_none;
     } else {
-        return "The MellonCookieSameSite parameter must be 'lax' or 'strict'";
+        return "The MellonCookieSameSite parameter must be 'lax', 'none' or 'strict'";
     }
 
     return NULL;
