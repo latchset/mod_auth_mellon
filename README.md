@@ -400,6 +400,13 @@ MellonDiagnosticsEnable Off
         # Default: MellonSessionLength 86400
         MellonSessionLength 86400
 
+        # MellonSessionIdleTimeout represents the amount of time a user
+        # can be inactive before the user's session times out in seconds.
+        # This parameter is disabled by default to maintain backward 
+        # compatibility.
+        # Default: MellonSessionIdleTimeout -1 (disabled)
+        MellonSessionIdleTimeout -1
+
         # MellonNoCookieErrorPage is the full path to a page which
         # mod_auth_mellon will redirect the user to if he returns from the
         # IdP without a cookie with a session id.

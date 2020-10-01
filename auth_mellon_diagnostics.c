@@ -584,6 +584,9 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
                     "%sMellonSessionLength (session_length): %d\n",
                     indent(level+1), cfg->session_length);
     apr_file_printf(diag_cfg->fd,
+                    "%sMellonSessionIdleTimeout (session_idle_timeout): %d\n",
+                    indent(level+1), cfg->session_idle_timeout);
+    apr_file_printf(diag_cfg->fd,
                     "%sMellonNoCookieErrorPage (no_cookie_error_page): %s\n",
                     indent(level+1), cfg->no_cookie_error_page);
     apr_file_printf(diag_cfg->fd,
@@ -1135,6 +1138,10 @@ am_diag_log_cache_entry(request_rec *r, int level, am_cache_entry_t *entry,
                         "%sexpires: %s\n",
                         indent(level+1),
                         am_diag_time_t_to_8601(r, entry->expires));
+        apr_file_printf(diag_cfg->fd,
+                        "%sidle_timeout: %s\n",
+                        indent(level+1),
+                        am_diag_time_t_to_8601(r, entry->idle_timeout));
         apr_file_printf(diag_cfg->fd,
                         "%saccess: %s\n",
                         indent(level+1),

@@ -151,7 +151,9 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
         if(strcmp(tablekey, key) == 0) {
             apr_time_t now = apr_time_now();
             /* We found the entry. */
-            if(e->expires > now) {
+            if ((e->expires > now) &&
+                ((e->idle_timeout == -1) ||
+                 (e->idle_timeout > now))) {
                 /* And it hasn't expired. */
                 return e;
             }
@@ -389,6 +391,7 @@ am_cache_entry_t *am_cache_new(request_rec *r,
 
     /* Far far into the future. */
     t->expires = 0x7fffffffffffffffLL;
+    t->idle_timeout = -1;
 
     t->logged_in = 0;
     t->size = 0;
@@ -462,6 +465,24 @@ void am_cache_update_expires(request_rec *r, am_cache_entry_t *t, apr_time_t exp
     /* Check if we should update the expires timestamp. */
     if(t->expires == 0 || t->expires > expires) {
         t->expires = expires;
+    }
+}
+
+/* This function updates the idle timeout timestamp of a session, based on the
+ * session idle timeout.
+ *
+ * Parameters:
+ *  request_rec *r           The request we are processing.
+ *  am_cache_entry_t *t      The current session.
+ *  int session_idle_timeout The new timestamp.
+ *
+ * Returns:
+ *  Nothing.
+ */
+void am_cache_update_idle_timeout(request_rec *r, am_cache_entry_t *t, int session_idle_timeout)
+{
+    if(session_idle_timeout > -1) {
+        t->idle_timeout = apr_time_now() + apr_time_make(session_idle_timeout, 0);
     }
 }
 

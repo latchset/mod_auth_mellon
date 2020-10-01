@@ -1550,6 +1550,14 @@ const command_rec auth_mellon_commands[] = {
         " to 86400 seconds (1 day)."
         ),
     AP_INIT_TAKE1(
+        "MellonSessionIdleTimeout",
+        ap_set_int_slot,
+        (void *)APR_OFFSETOF(am_dir_cfg_rec, session_idle_timeout),
+        OR_AUTHCFG,
+        "Amount of time a user can be inactive before the user's session times out. Defaults"
+        " to -1 seconds (disabled)."
+        ),
+    AP_INIT_TAKE1(
         "MellonNoCookieErrorPage",
         ap_set_string_slot,
         (void *)APR_OFFSETOF(am_dir_cfg_rec, no_cookie_error_page),
@@ -1869,6 +1877,7 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->endpoint_path = default_endpoint_path;
 
     dir->session_length = -1; /* -1 means use default. */
+    dir->session_idle_timeout = -1; /* -1 means disabled. */
 
     dir->no_cookie_error_page = NULL;
     dir->no_success_error_page = NULL;
@@ -2051,6 +2060,10 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
     new_cfg->session_length = (add_cfg->session_length != -1 ?
                                add_cfg->session_length :
                                base_cfg->session_length);
+
+    new_cfg->session_idle_timeout = (add_cfg->session_idle_timeout != -1 ?
+                                     add_cfg->session_idle_timeout :
+                                     base_cfg->session_idle_timeout);
 
     new_cfg->no_cookie_error_page = (add_cfg->no_cookie_error_page != NULL ?
                                      add_cfg->no_cookie_error_page :

@@ -279,6 +279,9 @@ typedef struct am_dir_cfg_rec {
     /* Maximum number of seconds a session is valid for. */
     int session_length;
 
+    /* Maximum number of seconds a session idle timeout is valid for. */
+    int session_idle_timeout;
+
     /* No cookie error page. */
     const char *no_cookie_error_page;
 
@@ -366,6 +369,7 @@ typedef struct am_cache_entry_t {
     am_cache_storage_t cookie_token;
     apr_time_t access;
     apr_time_t expires;
+    apr_time_t idle_timeout;
     int logged_in;
     unsigned short size;
     am_cache_storage_t user;
@@ -471,6 +475,7 @@ am_cache_entry_t *am_cache_new(request_rec *r,
 void am_cache_unlock(request_rec *r, am_cache_entry_t *entry);
 
 void am_cache_update_expires(request_rec *r, am_cache_entry_t *t, apr_time_t expires);
+void am_cache_update_idle_timeout(request_rec *r, am_cache_entry_t *t, int session_idle_timeout);
 
 void am_cache_env_populate(request_rec *r, am_cache_entry_t *session);
 int am_cache_env_append(am_cache_entry_t *session,

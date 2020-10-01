@@ -1714,6 +1714,9 @@ static int add_attributes(am_cache_entry_t *session, request_rec *r,
                                 + apr_time_make(dir_cfg->session_length, 0));
     }
 
+    /* Set the idle timeout to whatever is set by MellonSessionIdleTimeout. */
+    am_cache_update_idle_timeout(r, session, dir_cfg->session_idle_timeout);
+
     /* Save session NAME_ID information. */
     ret = am_cache_env_append(session, "NAME_ID", name_id);
     if(ret != OK) {
@@ -3873,6 +3876,8 @@ int am_auth_mellon_user(request_rec *r)
             return return_code;
         }
 
+        /* Update the idle timeout to whatever is set by MellonSessionIdleTimeout. */
+        am_cache_update_idle_timeout(r, session, dir->session_idle_timeout);
 
         /* The user has been authenticated, and we can now populate r->user
          * and the r->subprocess_env with values from the session store.
@@ -3897,6 +3902,9 @@ int am_auth_mellon_user(request_rec *r)
 
             am_diag_printf(r, "%s am_enable_info, have valid session\n",
                            __func__);
+
+            /* Update the idle timeout to whatever is set by MellonSessionIdleTimeout. */
+            am_cache_update_idle_timeout(r, session, dir->session_idle_timeout);
 
             /* The user is authenticated and has access to the resource.
              * Now we populate the environment with information about
