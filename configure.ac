@@ -91,6 +91,16 @@ AC_SUBST(GLIB_LIBS)
 
 AC_SUBST(MELLON_CFLAGS)
 
+#include <libxml/uri.h>
+PKG_CHECK_MODULES(LIBXML2, libxml-2.0)
+AC_SUBST(LIBXML2_CFLAGS)
+AC_SUBST(LIBXML2_LIBS)
+
+#include <xmlsec/xmlenc.h>
+PKG_CHECK_MODULES(XMLSEC, xmlsec1-openssl)
+AC_SUBST(XMLSEC_CFLAGS)
+AC_SUBST(XMLSEC_LIBS)
+
 # Test to see if we can include lasso/utils.h
 # AC_CHECK_HEADER won't work correctly unless we specifiy the include directories
 # found in the LASSO_CFLAGS. Save and restore CFLAGS and CPPFLAGS.
