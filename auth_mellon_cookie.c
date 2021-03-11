@@ -78,16 +78,13 @@ static const char *am_cookie_params(request_rec *r)
     }
 
     if (env_var_value == NULL){
-        if ((cfg->cookie_samesite != am_samesite_default) &&
-            (apr_table_get(r->notes, AM_FORCE_SAMESITE_NONE_NOTE) != NULL)) {
+        if (cfg->cookie_samesite == am_samesite_none ||
+                apr_table_get(r->notes, AM_FORCE_SAMESITE_NONE_NOTE) != NULL){
             cookie_samesite = "; SameSite=None";
-        }
-        else if (cfg->cookie_samesite == am_samesite_lax) {
+        } else if (cfg->cookie_samesite == am_samesite_lax) {
             cookie_samesite = "; SameSite=Lax";
         } else if (cfg->cookie_samesite == am_samesite_strict) {
             cookie_samesite = "; SameSite=Strict";
-        } else if (cfg->cookie_samesite == am_samesite_none) {
-            cookie_samesite = "; SameSite=None";
         }
     }
 
