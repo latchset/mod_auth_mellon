@@ -1,3 +1,34 @@
+Version 0.18.0
+---------------------------------------------------------------------------
+
+Security fixes:
+
+* [CVE-2019-13038] Redirect URL validation bypass
+
+  Version 0.17.0 and older of mod_auth_mellon allows the redirect URL
+  validation to be bypassed by specifying an URL formatted as
+  "///fishing-site.example.com/logout.html". In this case, the browser
+  would interpret the URL differently than the APR parsing utility
+  mellon uses and redirect to fishing-site.example.com.
+  This could be reproduced with:
+     https://rp.example.co.jp/mellon/logout?ReturnTo=///fishing-site.example.com/logout.html
+
+  This version fixes that issue by rejecting all URLs that start with "///".
+
+Enhancements:
+
+* A new option MellonSessionIdleTimeout that represents the amount of time
+  a user can be inactive before the user's session times out in seconds.
+
+Bug fixes:
+
+* Several build-time fixes
+
+* The CookieTest SameSite attribute was only set to None if mellon configure
+  option MellonCookieSameSite was set to something other than default.
+  This is now fixed.
+
+
 Version 0.17.0
 ---------------------------------------------------------------------------
 
