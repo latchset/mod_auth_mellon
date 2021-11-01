@@ -993,7 +993,7 @@ static int am_handle_logout_response_GET(request_rec *r, LassoLogout *logout)
 static int am_handle_logout_response_POST(request_rec *r, LassoLogout *logout,
     char *post_data)
 {
-    int rc;
+    int rc = 0;
     char *saml_response;
 
     saml_response = am_extract_query_parameter(r->pool, post_data,
