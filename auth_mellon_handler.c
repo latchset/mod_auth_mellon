@@ -55,7 +55,7 @@ static char *am_optional_metadata_element(apr_pool_t *p,
         char *lang;
         char *value;
         apr_ssize_t slen;
-	char *xmllang = "";
+        char *xmllang = "";
 
         apr_hash_this(index, (const void **)&lang, &slen, (void *)&value);
         
@@ -126,7 +126,7 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
     sp_entity_id = cfg->sp_entity_id ? cfg->sp_entity_id : url;
 
     if (cfg->sp_cert_file && cfg->sp_cert_file->contents) {
-	char *sp_cert_file;
+        char *sp_cert_file;
         char *cp;
         char *bp;
         const char *begin = "-----BEGIN CERTIFICATE-----";
@@ -136,7 +136,7 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
          * Try to remove leading and trailing garbage, as it can
          * wreak havoc XML parser if it contains [<>&]
          */
-	sp_cert_file = apr_pstrdup(p, cfg->sp_cert_file->contents);
+        sp_cert_file = apr_pstrdup(p, cfg->sp_cert_file->contents);
 
         cp = strstr(sp_cert_file, begin);
         if (cp != NULL) 
@@ -146,15 +146,15 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
         if (cp != NULL)
             *cp = '\0';
         
-	/* 
-	 * And remove any non printing char (CR, spaces...)
-	 */
-	bp = sp_cert_file;
-	for (cp = sp_cert_file; *cp; cp++) {
-		if (apr_isgraph(*cp))
-			*bp++ = *cp;
-	}
-	*bp = '\0';
+        /* 
+         * And remove any non printing char (CR, spaces...)
+         */
+        bp = sp_cert_file;
+        for (cp = sp_cert_file; *cp; cp++) {
+                if (apr_isgraph(*cp))
+                        *bp++ = *cp;
+        }
+        *bp = '\0';
 
         cert = apr_psprintf(p,
           "<KeyDescriptor use=\"signing\">"
@@ -350,28 +350,28 @@ static LassoServer *am_get_lasso_server(request_rec *r)
                                        cfg->sp_cert_file->path : NULL);
 #endif
         if (cfg->server == NULL) {
-	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-			  "Error initializing lasso server object. Please"
-			  " verify the following configuration directives:"
-			  " MellonSPMetadataFile and MellonSPPrivateKeyFile.");
+            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                          "Error initializing lasso server object. Please"
+                          " verify the following configuration directives:"
+                          " MellonSPMetadataFile and MellonSPPrivateKeyFile.");
 
-	    apr_thread_mutex_unlock(cfg->server_mutex);
-	    return NULL;
-	}
+            apr_thread_mutex_unlock(cfg->server_mutex);
+            return NULL;
+        }
 
         if (am_server_add_providers(cfg, r) == 0) {
-	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-			  "Error adding IdP to lasso server object. Please"
-			  " verify the following configuration directives:"
-			  " MellonIdPMetadataFile and"
+            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                          "Error adding IdP to lasso server object. Please"
+                          " verify the following configuration directives:"
+                          " MellonIdPMetadataFile and"
                           " MellonIdPPublicKeyFile.");
 
-	    lasso_server_destroy(cfg->server);
-	    cfg->server = NULL;
+            lasso_server_destroy(cfg->server);
+            cfg->server = NULL;
 
-	    apr_thread_mutex_unlock(cfg->server_mutex);
-	    return NULL;
-	}
+            apr_thread_mutex_unlock(cfg->server_mutex);
+            return NULL;
+        }
 
         cfg->server->signature_method = CFG_VALUE(cfg, signature_method);
     }
@@ -896,11 +896,15 @@ exit:
  *  request_rec *r       The logout response request.
  *  LassoLogout *logout  A LassoLogout object initiated with
  *                       the current session.
+ *  input                in POST case: url-decoded SAMLResponse parameter,
+ *                       in GET case:  url-encoded query string.
+ *  args                 Url-encoded parameters.
  *
  * Returns:
  *  OK on success, or an error if any of the steps fail.
  */
-static int am_handle_logout_response(request_rec *r, LassoLogout *logout)
+static int am_handle_logout_response_cmn(request_rec *r, LassoLogout *logout,
+                                         char *input, char *args)
 {
     gint res;
     int rc;
@@ -908,7 +912,7 @@ static int am_handle_logout_response(request_rec *r, LassoLogout *logout)
     char *return_to;
     am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
 
-    res = lasso_logout_process_response_msg(logout, r->args);
+    res = lasso_logout_process_response_msg(logout, input);
     am_diag_log_lasso_node(r, 0, LASSO_PROFILE(logout)->response,
                            "SAML Response (%s):", __func__);
 #ifdef HAVE_lasso_profile_set_signature_verify_hint
@@ -919,7 +923,7 @@ static int am_handle_logout_response(request_rec *r, LassoLogout *logout)
                          APR_HASH_KEY_STRING)) {
             lasso_profile_set_signature_verify_hint(&logout->parent,
                 LASSO_PROFILE_SIGNATURE_VERIFY_HINT_IGNORE);
-            res = lasso_logout_process_response_msg(logout, r->args);
+            res = lasso_logout_process_response_msg(logout, input);
         }
     }
 #endif
@@ -946,7 +950,7 @@ static int am_handle_logout_response(request_rec *r, LassoLogout *logout)
         am_delete_request_session(r, session);
     }
 
-    return_to = am_extract_query_parameter(r->pool, r->args, "RelayState");
+    return_to = am_extract_query_parameter(r->pool, args, "RelayState");
     if(return_to == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "No RelayState parameter to logout response handler."
@@ -981,6 +985,35 @@ static int am_handle_logout_response(request_rec *r, LassoLogout *logout)
     return HTTP_SEE_OTHER;
 }
 
+static int am_handle_logout_response_GET(request_rec *r, LassoLogout *logout)
+{
+    return am_handle_logout_response_cmn(r, logout, r->args, r->args);
+}
+
+static int am_handle_logout_response_POST(request_rec *r, LassoLogout *logout,
+    char *post_data)
+{
+    int rc;
+    char *saml_response;
+
+    saml_response = am_extract_query_parameter(r->pool, post_data,
+                                               "SAMLResponse");
+
+    if (saml_response == NULL) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
+                      "Could not find SAMLResponse field in POST data.");
+        return HTTP_BAD_REQUEST;
+    }
+
+    rc = am_urldecode(saml_response);
+    if (rc != OK) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
+                     "Could not urldecode SAMLResponse value.");
+        return rc;
+    }
+    return am_handle_logout_response_cmn(r, logout, saml_response,
+                                         post_data);
+}
 
 /* This function initiates a logout request and sends it to the IdP.
  *
@@ -1175,14 +1208,21 @@ static int am_handle_logout(request_rec *r)
      * - logout requests: The IdP sends a logout request to this service.
      *                    it can be either through HTTP-Redirect or SOAP.
      * - logout responses: We have sent a logout request to the IdP, and
-     *   are receiving a response.
+     *   are receiving a response either via GET or POST.
      * - We want to initiate a logout request.
      */
 
-    /* First check for IdP-initiated SOAP logout request */
+    /*
+     * First check for POST method, which could be either IdP-initiated SOAP
+     * logout request or POST logout response from IdP.
+     */
     if ((r->args == NULL) && (r->method_number == M_POST)) {
         int rc;
         char *post_data;
+        const char *content_type;
+
+        /* Check Content-Type */
+        content_type = apr_table_get(r->headers_in, "Content-Type");
 
         rc = am_read_post_data(r, &post_data, NULL);
         if (rc != OK) {
@@ -1190,8 +1230,12 @@ static int am_handle_logout(request_rec *r)
                           "Error reading POST data.");
             return HTTP_INTERNAL_SERVER_ERROR;
         }
-        return am_handle_logout_request(r, logout, post_data);
 
+        if (content_type != NULL &&
+            am_has_header(r, content_type, "application/x-www-form-urlencoded"))
+            return am_handle_logout_response_POST(r, logout, post_data);
+        else
+            return am_handle_logout_request(r, logout, post_data);
     } else if(am_extract_query_parameter(r->pool, r->args, 
                                          "SAMLRequest") != NULL) {
         /* SAMLRequest - logout request from the IdP. */
@@ -1200,7 +1244,7 @@ static int am_handle_logout(request_rec *r)
     } else if(am_extract_query_parameter(r->pool, r->args, 
                                          "SAMLResponse") != NULL) {
         /* SAMLResponse - logout response from the IdP. */
-        return am_handle_logout_response(r, logout);
+        return am_handle_logout_response_GET(r, logout);
 
     } else if(am_extract_query_parameter(r->pool, r->args, 
                                          "ReturnTo") != NULL) {
@@ -2972,8 +3016,8 @@ static int am_init_authn_request_common(request_rec *r,
     login = lasso_login_new(server);
     if(login == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-		      "Error creating LassoLogin object from LassoServer.");
-	return HTTP_INTERNAL_SERVER_ERROR;
+                      "Error creating LassoLogin object from LassoServer.");
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
     *login_return = login;
 
@@ -2982,7 +3026,7 @@ static int am_init_authn_request_common(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error creating login request."
                       " Lasso error: [%i] %s", ret, lasso_strerror(ret));
-	return HTTP_INTERNAL_SERVER_ERROR;
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     request = LASSO_SAMLP2_AUTHN_REQUEST(LASSO_PROFILE(login)->request);
@@ -3104,7 +3148,7 @@ static int am_init_authn_request_common(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error building login request."
                       " Lasso error: [%i] %s", ret, lasso_strerror(ret));
-	return HTTP_INTERNAL_SERVER_ERROR;
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     return OK;
@@ -3781,7 +3825,7 @@ int am_auth_mellon_user(request_rec *r)
     /* Check that the user has enabled authentication for this directory. */
     if(dir->enable_mellon == am_enable_off
        || dir->enable_mellon == am_enable_default) {
-	return DECLINED;
+        return DECLINED;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);
@@ -3951,7 +3995,7 @@ int am_check_uid(request_rec *r)
     /* Check that the user has enabled authentication for this directory. */
     if(dir->enable_mellon == am_enable_off
        || dir->enable_mellon == am_enable_default) {
-	return DECLINED;
+        return DECLINED;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);
