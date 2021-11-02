@@ -55,7 +55,7 @@ static char *am_optional_metadata_element(apr_pool_t *p,
         char *lang;
         char *value;
         apr_ssize_t slen;
-        char *xmllang = "";
+	char *xmllang = "";
 
         apr_hash_this(index, (const void **)&lang, &slen, (void *)&value);
         
@@ -126,7 +126,7 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
     sp_entity_id = cfg->sp_entity_id ? cfg->sp_entity_id : url;
 
     if (cfg->sp_cert_file && cfg->sp_cert_file->contents) {
-        char *sp_cert_file;
+	char *sp_cert_file;
         char *cp;
         char *bp;
         const char *begin = "-----BEGIN CERTIFICATE-----";
@@ -136,7 +136,7 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
          * Try to remove leading and trailing garbage, as it can
          * wreak havoc XML parser if it contains [<>&]
          */
-        sp_cert_file = apr_pstrdup(p, cfg->sp_cert_file->contents);
+	sp_cert_file = apr_pstrdup(p, cfg->sp_cert_file->contents);
 
         cp = strstr(sp_cert_file, begin);
         if (cp != NULL) 
@@ -146,15 +146,15 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
         if (cp != NULL)
             *cp = '\0';
         
-        /* 
-         * And remove any non printing char (CR, spaces...)
-         */
-        bp = sp_cert_file;
-        for (cp = sp_cert_file; *cp; cp++) {
-                if (apr_isgraph(*cp))
-                        *bp++ = *cp;
-        }
-        *bp = '\0';
+	/* 
+	 * And remove any non printing char (CR, spaces...)
+	 */
+	bp = sp_cert_file;
+	for (cp = sp_cert_file; *cp; cp++) {
+		if (apr_isgraph(*cp))
+			*bp++ = *cp;
+	}
+	*bp = '\0';
 
         cert = apr_psprintf(p,
           "<KeyDescriptor use=\"signing\">"
@@ -350,28 +350,28 @@ static LassoServer *am_get_lasso_server(request_rec *r)
                                        cfg->sp_cert_file->path : NULL);
 #endif
         if (cfg->server == NULL) {
-            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                          "Error initializing lasso server object. Please"
-                          " verify the following configuration directives:"
-                          " MellonSPMetadataFile and MellonSPPrivateKeyFile.");
+	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+			  "Error initializing lasso server object. Please"
+			  " verify the following configuration directives:"
+			  " MellonSPMetadataFile and MellonSPPrivateKeyFile.");
 
-            apr_thread_mutex_unlock(cfg->server_mutex);
-            return NULL;
-        }
+	    apr_thread_mutex_unlock(cfg->server_mutex);
+	    return NULL;
+	}
 
         if (am_server_add_providers(cfg, r) == 0) {
-            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                          "Error adding IdP to lasso server object. Please"
-                          " verify the following configuration directives:"
-                          " MellonIdPMetadataFile and"
+	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+			  "Error adding IdP to lasso server object. Please"
+			  " verify the following configuration directives:"
+			  " MellonIdPMetadataFile and"
                           " MellonIdPPublicKeyFile.");
 
-            lasso_server_destroy(cfg->server);
-            cfg->server = NULL;
+	    lasso_server_destroy(cfg->server);
+	    cfg->server = NULL;
 
-            apr_thread_mutex_unlock(cfg->server_mutex);
-            return NULL;
-        }
+	    apr_thread_mutex_unlock(cfg->server_mutex);
+	    return NULL;
+	}
 
         cfg->server->signature_method = CFG_VALUE(cfg, signature_method);
     }
@@ -3016,8 +3016,8 @@ static int am_init_authn_request_common(request_rec *r,
     login = lasso_login_new(server);
     if(login == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "Error creating LassoLogin object from LassoServer.");
-        return HTTP_INTERNAL_SERVER_ERROR;
+		      "Error creating LassoLogin object from LassoServer.");
+	return HTTP_INTERNAL_SERVER_ERROR;
     }
     *login_return = login;
 
@@ -3026,7 +3026,7 @@ static int am_init_authn_request_common(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error creating login request."
                       " Lasso error: [%i] %s", ret, lasso_strerror(ret));
-        return HTTP_INTERNAL_SERVER_ERROR;
+	return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     request = LASSO_SAMLP2_AUTHN_REQUEST(LASSO_PROFILE(login)->request);
@@ -3148,7 +3148,7 @@ static int am_init_authn_request_common(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error building login request."
                       " Lasso error: [%i] %s", ret, lasso_strerror(ret));
-        return HTTP_INTERNAL_SERVER_ERROR;
+	return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     return OK;
@@ -3825,7 +3825,7 @@ int am_auth_mellon_user(request_rec *r)
     /* Check that the user has enabled authentication for this directory. */
     if(dir->enable_mellon == am_enable_off
        || dir->enable_mellon == am_enable_default) {
-        return DECLINED;
+	return DECLINED;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);
@@ -3995,7 +3995,7 @@ int am_check_uid(request_rec *r)
     /* Check that the user has enabled authentication for this directory. */
     if(dir->enable_mellon == am_enable_off
        || dir->enable_mellon == am_enable_default) {
-        return DECLINED;
+	return DECLINED;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);
