@@ -54,8 +54,10 @@ umask 0077
 
 TEMPLATEFILE="$(mktemp -t mellon_create_sp.XXXXXXXXXX)"
 
+dd if=/dev/urandom of=$TEMPLATEFILE.RANDOM bs=256 count=1 2>/dev/null
+
 cat >"$TEMPLATEFILE" <<EOF
-RANDFILE           = /dev/urandom
+RANDFILE           = ${TEMPLATEFILE}.RANDOM
 [req]
 default_bits       = 3072
 default_keyfile    = privkey.pem
@@ -68,7 +70,7 @@ EOF
 
 openssl req -utf8 -batch -config "$TEMPLATEFILE" -new -x509 -days 3652 -nodes -out "$OUTFILE.cert" -keyout "$OUTFILE.key" 2>/dev/null
 
-rm -f "$TEMPLATEFILE"
+rm -f "$TEMPLATEFILE" "${TEMPLATEFILE}.RANDOM"
 
 CERT="$(grep -v '^-----' "$OUTFILE.cert")"
 
