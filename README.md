@@ -549,6 +549,7 @@ MellonDiagnosticsEnable Off
         # through the AuthnContextClassRef element of the AuthnRequest It will
         # also request enforcement of this level when receiving an
         # authenticating Assertion.
+        # It is possible to give multiple values.
         # If the assertion does not have the required security level, an HTTP
         # Forbidden status code is returned to the browser.
         # MellonAuthnContextClassRef "urn:oasis:names:tc:SAML:2.0:ac:classes:Kerberos"
