@@ -1337,6 +1337,14 @@ const command_rec auth_mellon_commands[] = {
         " take effect. The default value is 192KiB."
         ),
     AP_INIT_TAKE1(
+        "MellonCacheFile",
+        am_set_module_config_file_slot,
+        (void *)APR_OFFSETOF(am_mod_cfg_rec, cache_file),
+        RSRC_CONF,
+        "The cache file for session resume after resstart."
+        " Default value is none (no session resume)."
+        ),
+    AP_INIT_TAKE1(
         "MellonLockFile",
         am_set_module_config_file_slot,
         (void *)APR_OFFSETOF(am_mod_cfg_rec, lock_file),

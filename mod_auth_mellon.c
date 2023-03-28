@@ -27,6 +27,7 @@
 APLOG_USE_MODULE(auth_mellon);
 #endif
 
+
 /* This function is called after the configuration of the server is parsed
  * (it's a post-config hook).
  *
@@ -48,7 +49,6 @@ APLOG_USE_MODULE(auth_mellon);
 static int am_global_init(apr_pool_t *conf, apr_pool_t *log,
                           apr_pool_t *tmp, server_rec *s)
 {
-    apr_size_t        mem_size;
     am_mod_cfg_rec   *mod;
     int rv;
     const char userdata_key[] = "auth_mellon_init";
@@ -95,22 +95,8 @@ static int am_global_init(apr_pool_t *conf, apr_pool_t *log,
         mod->init_entry_size = AM_CACHE_MIN_ENTRY_SIZE;
     }
 
-    /* find out the memory size of the cache */
-    mem_size = mod->init_entry_size * mod->init_cache_size;
-
-
-    /* Create the shared memory, exit if it fails. */
-    rv = apr_shm_create(&(mod->cache), mem_size, NULL, conf);
-
-    if (rv != APR_SUCCESS) {
-        ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
-                     "shm_create: Error [%d] \"%s\"", rv,
-                     apr_strerror(rv, buffer, sizeof(buffer)));
+    if (am_cache_init(conf, tmp, s) != OK)
         return !OK;
-    }
-
-    /* Initialize the session table. */
-    am_cache_init(mod);
 
     /* Now create the mutex that we need for locking the shared memory, then
      * test for success. we really need this, so we exit on failure. */

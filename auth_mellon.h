@@ -126,6 +126,7 @@ typedef enum {
 typedef struct am_mod_cfg_rec {
     int cache_size;
     const char *lock_file;
+    const char *cache_file;
     const char *post_dir;
     apr_time_t post_ttl;
     int post_count;
@@ -464,7 +465,7 @@ void am_cookie_delete(request_rec *r);
 const char *am_cookie_token(request_rec *r);
 
 
-void am_cache_init(am_mod_cfg_rec *mod_cfg);
+int am_cache_init(apr_pool_t *conf, apr_pool_t *tmp, server_rec *s);
 am_cache_entry_t *am_cache_lock(request_rec *r, 
                                 am_cache_key_t type, const char *key);
 const char *am_cache_entry_get_string(am_cache_entry_t *e,
