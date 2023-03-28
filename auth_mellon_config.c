@@ -2245,7 +2245,7 @@ void *auth_mellon_server_config(apr_pool_t *p, server_rec *s)
     mod->post_size  = post_size;
 
     mod->entry_size = AM_CACHE_DEFAULT_ENTRY_SIZE;
-
+    mod->cache_file = NULL;
     mod->init_cache_size = 0;
     mod->init_lock_file = NULL;
     mod->init_entry_size = 0;
