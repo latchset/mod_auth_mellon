@@ -38,7 +38,7 @@ static inline const char *am_compat_request_ip(request_rec *r) {
 #if (AP_SERVER_MAJORVERSION_NUMBER == 2) && (AP_SERVER_MINORVERSION_NUMBER < 4)
     return r->connection->remote_ip;
 #else
-    return r->connection->client_ip;
+    return r->useragent_ip;
 #endif
 }
 
