@@ -42,6 +42,7 @@ Note that, depending on your distribution, apxs2 may be named apxs.
 mod_auth_mellon uses autoconf, and can be installed by running the
 following commands:
 ```
+./autogen.sh
 ./configure
 make
 make install
