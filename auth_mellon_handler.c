@@ -12,7 +12,7 @@
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
- * 
+ *
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -55,10 +55,10 @@ static char *am_optional_metadata_element(apr_pool_t *p,
         char *lang;
         char *value;
         apr_ssize_t slen;
-	char *xmllang = "";
+    char *xmllang = "";
 
         apr_hash_this(index, (const void **)&lang, &slen, (void *)&value);
-        
+
         if (*lang != '\0')
             xmllang = apr_psprintf(p, " xml:lang=\"%s\"", lang);
 
@@ -90,7 +90,7 @@ static char *am_optional_metadata(apr_pool_t *p, request_rec *r)
     count += apr_hash_count(cfg->sp_org_display_name);
     count += apr_hash_count(cfg->sp_org_url);
 
-    if (count == 0) 
+    if (count == 0)
         return "";
 
     org_name = am_optional_metadata_element(p, cfg->sp_org_name,
@@ -126,35 +126,35 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
     sp_entity_id = cfg->sp_entity_id ? cfg->sp_entity_id : url;
 
     if (cfg->sp_cert_file && cfg->sp_cert_file->contents) {
-	char *sp_cert_file;
+    char *sp_cert_file;
         char *cp;
         char *bp;
         const char *begin = "-----BEGIN CERTIFICATE-----";
         const char *end = "-----END CERTIFICATE-----";
 
-        /* 
+        /*
          * Try to remove leading and trailing garbage, as it can
          * wreak havoc XML parser if it contains [<>&]
          */
-	sp_cert_file = apr_pstrdup(p, cfg->sp_cert_file->contents);
+    sp_cert_file = apr_pstrdup(p, cfg->sp_cert_file->contents);
 
         cp = strstr(sp_cert_file, begin);
-        if (cp != NULL) 
+        if (cp != NULL)
             sp_cert_file = cp + strlen(begin);
 
         cp = strstr(sp_cert_file, end);
         if (cp != NULL)
             *cp = '\0';
-        
-	/* 
-	 * And remove any non printing char (CR, spaces...)
-	 */
-	bp = sp_cert_file;
-	for (cp = sp_cert_file; *cp; cp++) {
-		if (apr_isgraph(*cp))
-			*bp++ = *cp;
-	}
-	*bp = '\0';
+
+    /*
+     * And remove any non printing char (CR, spaces...)
+     */
+    bp = sp_cert_file;
+    for (cp = sp_cert_file; *cp; cp++) {
+        if (apr_isgraph(*cp))
+            *bp++ = *cp;
+    }
+    *bp = '\0';
 
         cert = apr_psprintf(p,
           "<KeyDescriptor use=\"signing\">"
@@ -191,6 +191,9 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
    <SingleLogoutService\n\
      Binding=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect\"\n\
      Location=\"%slogout\" />\n\
+   <SingleLogoutService\n\
+     Binding=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST\"\n\
+     Location=\"%slogout\" />\n\
    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>\n\
    <AssertionConsumerService\n\
      index=\"0\"\n\
@@ -208,7 +211,7 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
  </SPSSODescriptor>\n\
  %s\n\
 </EntityDescriptor>",
-      sp_entity_id, cfg->sp_entity_id ? "" : "metadata", 
+      sp_entity_id, cfg->sp_entity_id ? "" : "metadata",
       cert, url, url, url, url, url, am_optional_metadata(p, r));
 }
 #endif /* HAVE_lasso_server_new_from_buffers */
@@ -350,28 +353,28 @@ static LassoServer *am_get_lasso_server(request_rec *r)
                                        cfg->sp_cert_file->path : NULL);
 #endif
         if (cfg->server == NULL) {
-	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-			  "Error initializing lasso server object. Please"
-			  " verify the following configuration directives:"
-			  " MellonSPMetadataFile and MellonSPPrivateKeyFile.");
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+              "Error initializing lasso server object. Please"
+              " verify the following configuration directives:"
+              " MellonSPMetadataFile and MellonSPPrivateKeyFile.");
 
-	    apr_thread_mutex_unlock(cfg->server_mutex);
-	    return NULL;
-	}
+        apr_thread_mutex_unlock(cfg->server_mutex);
+        return NULL;
+    }
 
         if (am_server_add_providers(cfg, r) == 0) {
-	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-			  "Error adding IdP to lasso server object. Please"
-			  " verify the following configuration directives:"
-			  " MellonIdPMetadataFile and"
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+              "Error adding IdP to lasso server object. Please"
+              " verify the following configuration directives:"
+              " MellonIdPMetadataFile and"
                           " MellonIdPPublicKeyFile.");
 
-	    lasso_server_destroy(cfg->server);
-	    cfg->server = NULL;
+        lasso_server_destroy(cfg->server);
+        cfg->server = NULL;
 
-	    apr_thread_mutex_unlock(cfg->server_mutex);
-	    return NULL;
-	}
+        apr_thread_mutex_unlock(cfg->server_mutex);
+        return NULL;
+    }
 
         cfg->server->signature_method = CFG_VALUE(cfg, signature_method);
     }
@@ -597,26 +600,113 @@ static int am_save_lasso_profile_state(request_rec *r,
     return ret;
 }
 
+/* Use Lasso Logout to set the HTTP content & headers for HTTP-POST binding.
+ *
+ * Parameters:
+ *  request_rec *r         The request we are processing.
+ *  LassoProfile *profile  The Lasso profile(logout) message.
+ *  char *post_data        The post data (if present for POST logout)
+ *
+ * Returns:
+ *  OK on success, or an error on failure.
+ */
+static int am_set_logout_response_post_content(request_rec *r,
+                                               LassoProfile *profile,
+                                               char *post_data)
+{
+    char *url;
+    char *message;
+    char *relay_state = NULL;
+    char *output;
+
+    url = am_htmlencode(r, profile->msg_url);
+    message = am_htmlencode(r, profile->msg_body);
+    if (profile->msg_relayState != NULL) {
+        relay_state = am_htmlencode(r, profile->msg_relayState);
+    } else {
+        /* Try to get relayState from post_data (lasso seems not to initialize relayState from post logout) */
+        int rc = 0;
+        relay_state = am_extract_query_parameter(r->pool, post_data,
+                                                 "RelayState");
+        if (relay_state) {
+            rc = am_urldecode(relay_state);
+            if (rc != OK) {
+                AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
+                              "Could not urldecode RelayState value.");
+                relay_state = NULL;
+            }
+        }
+    }
+
+    if (relay_state) {
+        output = apr_psprintf(r->pool,
+          "<!DOCTYPE html>\n"
+          "<html>\n"
+          " <head>\n"
+          "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n"
+          "  <title>POST data</title>\n"
+          " </head>\n"
+          " <body onload=\"document.forms[0].submit()\">\n"
+          "  <noscript><p>\n"
+          "   <strong>Note:</strong> Since your browser does not support JavaScript, you must press the button below once to proceed.\n"
+          "  </p></noscript>\n"
+          "  <form method=\"POST\" action=\"%s\">\n"
+          "    <input type=\"hidden\" name=\"SAMLResponse\" value=\"%s\">\n"
+          "    <input type=\"hidden\" name=\"RelayState\" value=\"%s\">\n"
+          "    <noscript>\n"
+          "     <input type=\"submit\">\n"
+          "    </noscript>\n"
+          "  </form>\n"
+          " </body>\n"
+          "</html>\n",
+          url, message, relay_state);
+    } else {
+        output = apr_psprintf(r->pool,
+          "<!DOCTYPE html>\n"
+          "<html>\n"
+          " <head>\n"
+          "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n"
+          "  <title>POST data</title>\n"
+          " </head>\n"
+          " <body onload=\"document.forms[0].submit()\">\n"
+          "  <noscript><p>\n"
+          "   <strong>Note:</strong> Since your browser does not support JavaScript, you must press the button below once to proceed.\n"
+          "  </p></noscript>\n"
+          "  <form method=\"POST\" action=\"%s\">\n"
+          "    <input type=\"hidden\" name=\"SAMLResponse\" value=\"%s\">\n"
+          "    <noscript>\n"
+          "     <input type=\"submit\">\n"
+          "    </noscript>\n"
+          "  </form>\n"
+          " </body>\n"
+          "</html>\n",
+          url, message);
+    }
+
+    ap_set_content_type(r, "text/html");
+    ap_rputs(output, r);
+
+    return OK;
+}
 
 /* Returns a SAML response
  *
  * Parameters:
  *  request_rec *r         The current request.
  *  LassoProfile *profile  The profile object.
+ *  char *post_data        The post data (if present for POST logout)
  *
  * Returns:
  *  HTTP_INTERNAL_SERVER_ERROR if an error occurs, HTTP_SEE_OTHER for the
  *  Redirect binding and OK for the SOAP binding.
  */
 static int am_return_logout_response(request_rec *r,
-                              LassoProfile *profile)
+                                     LassoProfile *profile,
+                                     char *post_data)
 {
     if (profile->msg_url && profile->msg_body) {
         /* POST binding response */
-        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "Error building logout response message."
-                      " POST binding is unsupported.");
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return am_set_logout_response_post_content(r, profile, post_data);
     } else if (profile->msg_url) {
         /* HTTP-Redirect binding response */
         apr_table_setn(r->headers_out, "Location",
@@ -648,7 +738,7 @@ static int am_return_logout_response(request_rec *r,
  * Returns:
  *  OK on success or HTTP_INTERNAL_SERVER_ERROR on failure.
  */
-static void am_restore_lasso_profile_state(request_rec *r, 
+static void am_restore_lasso_profile_state(request_rec *r,
                                            LassoProfile *profile,
                                            am_cache_entry_t *am_session)
 {
@@ -696,12 +786,16 @@ static void am_restore_lasso_profile_state(request_rec *r,
  *  request_rec *r       The logout request.
  *  LassoLogout *logout  A LassoLogout object initiated with
  *                       the current session.
+ *  char *msg            The logout message to process.
+ *  char *post_data      The post data (if present for POST logout)
  *
  * Returns:
  *  OK on success, or an error if any of the steps fail.
  */
-static int am_handle_logout_request(request_rec *r, 
-                                    LassoLogout *logout, char *msg)
+static int am_handle_logout_request(request_rec *r,
+                                    LassoLogout *logout,
+                                    char *msg,
+                                    char *post_data)
 {
     gint res = 0, rc = HTTP_OK;
     am_cache_entry_t *session = NULL;
@@ -767,7 +861,7 @@ static int am_handle_logout_request(request_rec *r,
 
     /* Validate the logout message. Ignore missing signature. */
     res = lasso_logout_validate_request(logout);
-    if(res != 0 && 
+    if(res != 0 &&
        res != LASSO_DS_ERROR_SIGNATURE_NOT_FOUND &&
        res != LASSO_PROFILE_ERROR_SESSION_NOT_FOUND) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r,
@@ -796,7 +890,7 @@ static int am_handle_logout_request(request_rec *r,
         rc = HTTP_INTERNAL_SERVER_ERROR;
         goto exit;
     }
-    rc = am_return_logout_response(r, &logout->parent);
+    rc = am_return_logout_response(r, &logout->parent, post_data);
 
 exit:
     if (session != NULL) {
@@ -805,6 +899,43 @@ exit:
 
     lasso_logout_destroy(logout);
     return rc;
+}
+
+/* This function handles an IdP initiated logout request HTTP-POST.
+ *
+ * Parameters:
+ *  request_rec *r       The logout request.
+ *  LassoLogout *logout  A LassoLogout object initiated with
+ *                       the current session.
+ *  char *post_data      The post data (if present for POST logout)
+ *
+ * Returns:
+ *  OK on success, or an error if any of the steps fail.
+ */
+static int am_handle_logout_request_POST(request_rec *r,
+                                         LassoLogout *logout,
+                                         char *post_data)
+{
+    int rc = 0;
+    char *saml_request;
+
+    saml_request = am_extract_query_parameter(r->pool, post_data,
+                                               "SAMLRequest");
+
+    if (saml_request == NULL) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
+                      "Could not find SAMLRequest field in POST data.");
+        return HTTP_BAD_REQUEST;
+    }
+
+    rc = am_urldecode(saml_request);
+    if (rc != OK) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, rc, r,
+                     "Could not urldecode SAMLRequest value.");
+        return rc;
+    }
+
+    return am_handle_logout_request(r, logout, saml_request, post_data);
 }
 
 /* This function handles an invalidate request.
@@ -1214,7 +1345,7 @@ static int am_handle_logout(request_rec *r)
 
     /*
      * First check for POST method, which could be either IdP-initiated SOAP
-     * logout request or POST logout response from IdP.
+     * or HTTP-POST logout request or POST logout response from IdP.
      */
     if ((r->args == NULL) && (r->method_number == M_POST)) {
         int rc;
@@ -1232,21 +1363,29 @@ static int am_handle_logout(request_rec *r)
         }
 
         if (content_type != NULL &&
-            am_has_header(r, content_type, "application/x-www-form-urlencoded"))
-            return am_handle_logout_response_POST(r, logout, post_data);
-        else
-            return am_handle_logout_request(r, logout, post_data);
-    } else if(am_extract_query_parameter(r->pool, r->args, 
+            am_has_header(r, content_type, "application/x-www-form-urlencoded")) {
+            /* POST can be for a SAMLRequest (IDP request for SLO) or a SAMLResponse (IDP response for SLO) */
+            char *saml_param;
+            saml_param = am_extract_query_parameter(r->pool, post_data,
+                                                    "SAMLResponse");
+            if (saml_param) {
+                 return am_handle_logout_response_POST(r, logout, post_data);
+            }
+        }
+
+        /* HTTP-POST Request */
+        return am_handle_logout_request_POST(r, logout, post_data);
+    } else if(am_extract_query_parameter(r->pool, r->args,
                                          "SAMLRequest") != NULL) {
         /* SAMLRequest - logout request from the IdP. */
-        return am_handle_logout_request(r, logout, r->args);
+        return am_handle_logout_request(r, logout, r->args, r->args);
 
-    } else if(am_extract_query_parameter(r->pool, r->args, 
+    } else if(am_extract_query_parameter(r->pool, r->args,
                                          "SAMLResponse") != NULL) {
         /* SAMLResponse - logout response from the IdP. */
         return am_handle_logout_response_GET(r, logout);
 
-    } else if(am_extract_query_parameter(r->pool, r->args, 
+    } else if(am_extract_query_parameter(r->pool, r->args,
                                          "ReturnTo") != NULL) {
         /* RedirectTo - SP initiated logout. */
         return am_init_logout_request(r, logout);
@@ -2514,7 +2653,7 @@ static int am_handle_artifact_reply(request_rec *r)
 
 
 
-/* This function builds web form inputs for a saved POST request, 
+/* This function builds web form inputs for a saved POST request,
  * in multipart/form-data format.
  *
  * Parameters:
@@ -2559,9 +2698,9 @@ const char *am_post_mkform_multipart(request_rec *r, const char *post_data)
         if (*mime_part == '\0')
             continue;
 
-        /* Find Content-Disposition header 
-         * Looking for 
-         * Content-Disposition: form-data; name="the_name"\n 
+        /* Find Content-Disposition header
+         * Looking for
+         * Content-Disposition: form-data; name="the_name"\n
          */
         hdr = am_get_mime_header(r, mime_part, "Content-Disposition");
         if (hdr == NULL) {
@@ -2580,7 +2719,7 @@ const char *am_post_mkform_multipart(request_rec *r, const char *post_data)
         if ((value = am_get_mime_body(r, mime_part)) == NULL)
             value = "";
 
-        input_item = apr_psprintf(r->pool, 
+        input_item = apr_psprintf(r->pool,
                     "    <input type=\"hidden\" name=\"%s\" value=\"%s\">\n",
                     am_htmlencode(r, name), am_htmlencode(r, value));
         post_form = apr_pstrcat(r->pool, post_form, input_item, NULL);
@@ -2589,7 +2728,7 @@ const char *am_post_mkform_multipart(request_rec *r, const char *post_data)
     return post_form;
 }
 
-/* This function builds web form inputs for a saved POST request, 
+/* This function builds web form inputs for a saved POST request,
  * in application/x-www-form-urlencoded format
  *
  * Parameters:
@@ -2606,14 +2745,14 @@ const char *am_post_mkform_urlencoded(request_rec *r, const char *post_data)
     char *post_form = "";
     char empty_value[] = "";
 
-    for (item = am_xstrtok(r, post_data, "&", &last); item; 
+    for (item = am_xstrtok(r, post_data, "&", &last); item;
          item = am_xstrtok(r, NULL, "&", &last)) {
         char *l1;
         char *name;
         char *value;
         const char *input_item;
 
-        name = (char *)am_xstrtok(r, item, "=", &l1);  
+        name = (char *)am_xstrtok(r, item, "=", &l1);
         value = (char *)am_xstrtok(r, NULL, "=", &l1);
 
         if (name == NULL)
@@ -2634,7 +2773,7 @@ const char *am_post_mkform_urlencoded(request_rec *r, const char *post_data)
             return NULL;
         }
 
-        input_item = apr_psprintf(r->pool, 
+        input_item = apr_psprintf(r->pool,
                     "    <input type=\"hidden\" name=\"%s\" value=\"%s\">\n",
                     am_htmlencode(r, name), am_htmlencode(r, value));
         post_form = apr_pstrcat(r->pool, post_form, input_item, NULL);
@@ -2710,7 +2849,7 @@ static int am_handle_repost(request_rec *r)
                           "Bad repost query: invalid charset \"%s\"", charset);
             return HTTP_BAD_REQUEST;
         }
-    
+
         /* Check that charset is sane */
         for (cp = charset; *cp; cp++) {
             if (!apr_isalnum(*cp) && (*cp != '-') && (*cp != '_')) {
@@ -2736,8 +2875,8 @@ static int am_handle_repost(request_rec *r)
             return HTTP_BAD_REQUEST;
         }
     }
-    
-    
+
+
     return_url = am_extract_query_parameter(r->pool, query, "ReturnTo");
     if (return_url == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
@@ -2794,10 +2933,10 @@ static int am_handle_repost(request_rec *r)
     output = apr_psprintf(r->pool,
       "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
       "<html>\n"
-      " <head>\n" 
-      "  <title>SAML rePOST request</title>\n" 
-      " </head>\n" 
-      " <body onload=\"document.getElementById('form').submit();\">\n" 
+      " <head>\n"
+      "  <title>SAML rePOST request</title>\n"
+      " </head>\n"
+      " <body onload=\"document.getElementById('form').submit();\">\n"
       "  <noscript>\n"
       "   Your browser does not support Javascript, \n"
       "   you must click the button below to proceed.\n"
@@ -2807,7 +2946,7 @@ static int am_handle_repost(request_rec *r)
       "     <input type=\"submit\">\n"
       "    </noscript>\n"
       "   </form>\n"
-      " </body>\n" 
+      " </body>\n"
       "</html>\n",
       am_htmlencode(r, return_url), enctype, charset, post_form);
 
@@ -3016,8 +3155,8 @@ static int am_init_authn_request_common(request_rec *r,
     login = lasso_login_new(server);
     if(login == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-		      "Error creating LassoLogin object from LassoServer.");
-	return HTTP_INTERNAL_SERVER_ERROR;
+              "Error creating LassoLogin object from LassoServer.");
+    return HTTP_INTERNAL_SERVER_ERROR;
     }
     *login_return = login;
 
@@ -3026,7 +3165,7 @@ static int am_init_authn_request_common(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error creating login request."
                       " Lasso error: [%i] %s", ret, lasso_strerror(ret));
-	return HTTP_INTERNAL_SERVER_ERROR;
+    return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     request = LASSO_SAMLP2_AUTHN_REQUEST(LASSO_PROFILE(login)->request);
@@ -3148,7 +3287,7 @@ static int am_init_authn_request_common(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error building login request."
                       " Lasso error: [%i] %s", ret, lasso_strerror(ret));
-	return HTTP_INTERNAL_SERVER_ERROR;
+    return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     return OK;
@@ -3506,7 +3645,7 @@ static int am_probe_url(request_rec *r, const char *url, int timeout)
     int error;
 
     status = 0;
-    if ((error = am_httpclient_get(r, url, &dontcare, &len, 
+    if ((error = am_httpclient_get(r, url, &dontcare, &len,
                                    timeout, &status)) != OK)
         return error;
 
@@ -3559,7 +3698,7 @@ static int am_handle_probe_discovery(request_rec *r) {
     }
 
     /*
-     * Check for mandatory arguments early to avoid sending 
+     * Check for mandatory arguments early to avoid sending
      * probles for nothing.
      */
     return_to = am_extract_query_parameter(r->pool, r->args, "return");
@@ -3598,7 +3737,7 @@ static int am_handle_probe_discovery(request_rec *r) {
     }
 
     /*
-     * Proceed with built-in IdP discovery. 
+     * Proceed with built-in IdP discovery.
      *
      * First try sending probes to IdP configured for discovery.
      * Second send probes for all configured IdP
@@ -3615,7 +3754,7 @@ static int am_handle_probe_discovery(request_rec *r) {
         header = apr_table_elts(cfg->probe_discovery_idp);
         elts = (apr_table_entry_t *)header->elts;
 
-        for (i = 0; i < header->nelts; i++) { 
+        for (i = 0; i < header->nelts; i++) {
             idp = elts[i].key;
             url = elts[i].val;
 
@@ -3632,7 +3771,7 @@ static int am_handle_probe_discovery(request_rec *r) {
         idp_list = g_hash_table_get_keys(server->providers);
         for (iter = idp_list; iter != NULL; iter = iter->next) {
             idp = iter->data;
-    
+
             if (am_probe_url(r, idp, timeout) == OK) {
                 disco_idp = idp;
                 break;
@@ -3641,7 +3780,7 @@ static int am_handle_probe_discovery(request_rec *r) {
         g_list_free(idp_list);
     }
 
-    /* 
+    /*
      * On failure, fail if a MellonProbeDiscoveryIdP
      * list was provided, otherwise try first IdP.
      */
@@ -3660,16 +3799,16 @@ static int am_handle_probe_discovery(request_rec *r) {
             return HTTP_INTERNAL_SERVER_ERROR;
         } else {
             AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r, "probeDiscovery "
-                          "failed, trying default IdP %s", disco_idp); 
+                          "failed, trying default IdP %s", disco_idp);
         }
     } else {
         AM_LOG_RERROR(APLOG_MARK, APLOG_INFO, 0, r,
                       "probeDiscovery using %s", disco_idp);
     }
 
-    redirect_url = apr_psprintf(r->pool, "%s%s%s=%s", return_to, 
+    redirect_url = apr_psprintf(r->pool, "%s%s%s=%s", return_to,
                                 strchr(return_to, '?') ? "&" : "?",
-                                am_urlencode(r->pool, idp_param), 
+                                am_urlencode(r->pool, idp_param),
                                 am_urlencode(r->pool, disco_idp));
 
     apr_table_setn(r->headers_out, "Location", redirect_url);
@@ -3825,7 +3964,7 @@ int am_auth_mellon_user(request_rec *r)
     /* Check that the user has enabled authentication for this directory. */
     if(dir->enable_mellon == am_enable_off
        || dir->enable_mellon == am_enable_default) {
-	return DECLINED;
+    return DECLINED;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);
@@ -3995,7 +4134,7 @@ int am_check_uid(request_rec *r)
     /* Check that the user has enabled authentication for this directory. */
     if(dir->enable_mellon == am_enable_off
        || dir->enable_mellon == am_enable_default) {
-	return DECLINED;
+    return DECLINED;
     }
 
     am_diag_printf(r, "enter function %s\n", __func__);

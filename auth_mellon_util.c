@@ -165,9 +165,9 @@ int am_validate_redirect_url(request_rec *r, const char *url)
  * Returns:
  *  An array of collected backreference strings
  */
-const apr_array_header_t *am_cond_backrefs(request_rec *r, 
-                                           const am_cond_t *ce, 
-                                           const char *value, 
+const apr_array_header_t *am_cond_backrefs(request_rec *r,
+                                           const am_cond_t *ce,
+                                           const char *value,
                                            const ap_regmatch_t *regmatch)
 {
     apr_array_header_t *backrefs;
@@ -195,7 +195,7 @@ const apr_array_header_t *am_cond_backrefs(request_rec *r,
     return (const apr_array_header_t *)backrefs;
 }
 
-/* This function clones an am_cond_t and substitute value to 
+/* This function clones an am_cond_t and substitute value to
  * match (both regexp and string) with backreferences from
  * a previous regex match.
  *
@@ -207,7 +207,7 @@ const apr_array_header_t *am_cond_backrefs(request_rec *r,
  * Returns:
  *  The cloned am_cond_t
  */
-const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce, 
+const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
                                    const apr_array_header_t *backrefs)
 {
     am_cond_t *c;
@@ -229,13 +229,13 @@ const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
         apr_size_t pad;
         apr_size_t nslen;
 
-        /* 
+        /*
          * Make sure we got a %
          */
         assert(instr[i] == '%');
 
         /*
-         * Copy the format string in fstr. It can be a single 
+         * Copy the format string in fstr. It can be a single
          * digit (e.g.: %1) , or a curly-brace enclosed text
          * (e.g.: %{12})
          */
@@ -262,7 +262,7 @@ const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
 
         /*
          * Try to extract a namespace (ns) and a name, e.g: %{ENV:foo}
-         */ 
+         */
         fstr = apr_pstrndup(r->pool, fstr, flen);
         if ((nslen = strcspn(fstr, ":")) != flen) {
             ns = apr_pstrndup(r->pool, fstr, nslen);
@@ -280,7 +280,7 @@ const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
              */
             int d = (int)apr_atoi64(fstr);
 
-            if ((d >= 0) && (d < backrefs->nelts)) 
+            if ((d >= 0) && (d < backrefs->nelts))
                 value = ((const char **)(backrefs->elts))[d];
 
         } else if ((*ns == '\0') && (strcmp(fstr, "%") == 0)) {
@@ -315,11 +315,11 @@ const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
             value = "";
 
         /*
-         * Concatenate the value with leading text, and * keep track 
+         * Concatenate the value with leading text, and * keep track
          * of the last location we copied in source string
          */
         outstr = apr_pstrcat(r->pool, outstr,
-                             apr_pstrndup(r->pool, instr + last, i - last), 
+                             apr_pstrndup(r->pool, instr + last, i - last),
                              value, NULL);
         last = i + flen + pad;
 
@@ -333,7 +333,7 @@ const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
      * Copy text remaining after the last format string.
      */
     outstr = apr_pstrcat(r->pool, outstr,
-                         apr_pstrndup(r->pool, instr + last, i - last), 
+                         apr_pstrndup(r->pool, instr + last, i - last),
                          NULL);
     c->str = outstr;
 
@@ -346,10 +346,10 @@ const am_cond_t *am_cond_substitue(request_rec *r, const am_cond_t *ce,
      */
     if (ce->flags & AM_COND_FLAG_REG) {
         int regex_flags = AP_REG_EXTENDED|AP_REG_NOSUB;
- 
+
         if (ce->flags & AM_COND_FLAG_NC)
             regex_flags |= AP_REG_ICASE;
- 
+
         c->regex = ap_pregcomp(r->pool, outstr, regex_flags);
         if (c->regex == NULL) {
              AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r,
@@ -398,9 +398,9 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
         if (ce->flags & AM_COND_FLAG_IGN)
             continue;
 
-        /* 
+        /*
          * We matched a [OR] rule, skip the next rules
-         * until we have one without [OR]. 
+         * until we have one without [OR].
          */
         if (skip_or) {
             if (!(ce->flags & AM_COND_FLAG_OR))
@@ -413,9 +413,9 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
             am_diag_printf(r, "Skip, [OR] rule matched previously\n");
             continue;
         }
-        
-        /* 
-         * look for a match on each value for this attribute, 
+
+        /*
+         * look for a match on each value for this attribute,
          * stop on first match.
          */
         for (j = 0; (j < session->size) && !match; j++) {
@@ -423,14 +423,14 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
             am_envattr_conf_t *envattr_conf = NULL;
 
             /*
-             * if MAP flag is set, check for remapped 
+             * if MAP flag is set, check for remapped
              * attribute name with mellonSetEnv
              */
             if (ce->flags & AM_COND_FLAG_MAP) {
-                envattr_conf =  (am_envattr_conf_t *)apr_hash_get(dir_cfg->envattr, 
+                envattr_conf =  (am_envattr_conf_t *)apr_hash_get(dir_cfg->envattr,
                                          am_cache_entry_get_string(session,&session->env[j].varname),
                                          APR_HASH_KEY_STRING);
-                                                    
+
                 if (envattr_conf != NULL)
                     varname = envattr_conf->name;
             }
@@ -442,7 +442,7 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
             if (varname == NULL)
                 varname = am_cache_entry_get_string(session,
                                                     &session->env[j].varname);
-                      
+
             if (strcmp(varname, ce->varname) != 0)
                     continue;
 
@@ -455,11 +455,11 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
                 ce = am_cond_substitue(r, ce, backrefs);
 
             ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, r,
-                          "Evaluate %s vs \"%s\"", 
+                          "Evaluate %s vs \"%s\"",
                           ce->directive, value);
 
             am_diag_printf(r, "evaluate value \"%s\" ", value);
-    
+
             if (value == NULL) {
                  match = 0;          /* can not happen */
 
@@ -467,7 +467,7 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
                  int nsub = ce->regex->re_nsub + 1;
                  ap_regmatch_t *regmatch;
 
-                 regmatch = (ap_regmatch_t *)apr_palloc(r->pool, 
+                 regmatch = (ap_regmatch_t *)apr_palloc(r->pool,
                             nsub * sizeof(*regmatch));
 
                  match = !ap_regexec(ce->regex, value, nsub, regmatch, 0);
@@ -518,7 +518,7 @@ int am_check_permissions(request_rec *r, am_cache_entry_t *session)
 
         /*
          * Match on [OR] condition means we skip until a rule
-         * without [OR], 
+         * without [OR],
          */
         if (match && (ce->flags & AM_COND_FLAG_OR))
             skip_or = 1;
@@ -562,7 +562,7 @@ void am_set_cache_control_headers(request_rec *r)
  *
  * The data is stored in a buffer allocated from the request pool.
  * After successful operation *data contains a pointer to the data and
- * *length contains the length of the data. 
+ * *length contains the length of the data.
  * The data will always be null-terminated.
  *
  * Parameters:
@@ -1061,7 +1061,7 @@ char *am_generate_id(request_rec *r)
  * Returns:
  *  The directory part of path
  */
-const char *am_filepath_dirname(apr_pool_t *p, const char *path) 
+const char *am_filepath_dirname(apr_pool_t *p, const char *path)
 {
     char *cp;
 
@@ -1073,7 +1073,7 @@ const char *am_filepath_dirname(apr_pool_t *p, const char *path)
     if (((cp = strrchr(path, (int)'/')) == NULL) &&
         ((cp = strrchr(path, (int)'\\')) == NULL))
             return ".";
-   
+
     return apr_pstrndup(p, path, cp - path);
 }
 
@@ -1144,7 +1144,7 @@ am_file_data_t *am_file_data_copy(apr_pool_t *pool,
  * returns the rv value. If the stat was successful the stat
  * information is left in file_data->finfo and APR_SUCCESS
  * set set as file_data->rv and returned as the function result.
- * 
+ *
  * The file_data->stat_time indicates if and when the stat was
  * performed, a zero time value indicates the operation has not yet
  * been performed.
@@ -1279,7 +1279,7 @@ int am_postdir_cleanup(request_rec *r)
     expire_before = apr_time_now() - mod_cfg->post_ttl * APR_USEC_PER_SEC;
 
     /*
-     * Open our POST directory or create it. 
+     * Open our POST directory or create it.
      */
     rv = apr_dir_open(&postdir, mod_cfg->post_dir, r->pool);
     if (rv != 0) {
@@ -1305,7 +1305,7 @@ int am_postdir_cleanup(request_rec *r)
 
         if (afi.ctime < expire_before) {
             fname = apr_psprintf(r->pool, "%s/%s", mod_cfg->post_dir, afi.name);
-            (void)apr_file_remove(fname , r->pool); 
+            (void)apr_file_remove(fname , r->pool);
         } else {
             count++;
         }
@@ -1323,7 +1323,7 @@ int am_postdir_cleanup(request_rec *r)
     return OK;
 }
 
-/* 
+/*
  * HTML-encode a string
  *
  * Parameters:
@@ -1431,9 +1431,9 @@ int am_save_post(request_rec *r, const char **relay_state)
     content_type = apr_table_get(r->headers_in, "Content-Type");
     if (content_type == NULL) {
         content_type = "urlencoded";
-        charset = NULL; 
+        charset = NULL;
     } else {
-        if (am_has_header(r, content_type, 
+        if (am_has_header(r, content_type,
             "application/x-www-form-urlencoded")) {
             content_type = "urlencoded";
 
@@ -1448,7 +1448,7 @@ int am_save_post(request_rec *r, const char **relay_state)
         }
 
         charset = am_get_header_attr(r, content_type, NULL, "charset");
-    }     
+    }
 
     if ((psf_id = am_generate_id(r)) == NULL) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r, "cannot generate id");
@@ -1458,23 +1458,23 @@ int am_save_post(request_rec *r, const char **relay_state)
     psf_name = apr_psprintf(r->pool, "%s/%s", mod_cfg->post_dir, psf_id);
 
     if (apr_file_open(&psf, psf_name,
-                      APR_WRITE|APR_CREATE|APR_BINARY, 
+                      APR_WRITE|APR_CREATE|APR_BINARY,
                       APR_FPROT_UREAD|APR_FPROT_UWRITE,
                       r->pool) != OK) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "cannot create POST session file");
         return HTTP_INTERNAL_SERVER_ERROR;
-    } 
+    }
 
     if (am_read_post_data(r, &post_data, &post_data_len) != OK) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r, "cannot read POST data");
         (void)apr_file_close(psf);
         return HTTP_INTERNAL_SERVER_ERROR;
-    } 
+    }
 
     if (post_data_len > mod_cfg->post_size) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "POST data size %" APR_SIZE_T_FMT 
+                      "POST data size %" APR_SIZE_T_FMT
                       " exceeds maximum %" APR_SIZE_T_FMT ". "
                       "Increase MellonPostSize directive.",
                       post_data_len, mod_cfg->post_size);
@@ -1484,13 +1484,13 @@ int am_save_post(request_rec *r, const char **relay_state)
 
     written = post_data_len;
     if ((apr_file_write(psf, post_data, &written) != OK) ||
-        (written != post_data_len)) { 
+        (written != post_data_len)) {
             AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                           "cannot write to POST session file");
             (void)apr_file_close(psf);
             return HTTP_INTERNAL_SERVER_ERROR;
-    } 
-    
+    }
+
     if (apr_file_close(psf) != OK) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "cannot close POST session file");
@@ -1498,15 +1498,15 @@ int am_save_post(request_rec *r, const char **relay_state)
     }
 
     if (charset != NULL)
-        charset = apr_psprintf(r->pool, "&charset=%s", 
+        charset = apr_psprintf(r->pool, "&charset=%s",
                                am_urlencode(r->pool, charset));
-    else 
+    else
         charset = "";
 
-    *relay_state = apr_psprintf(r->pool, 
+    *relay_state = apr_psprintf(r->pool,
                                 "%srepost?id=%s&ReturnTo=%s&enctype=%s%s",
                                 am_get_endpoint_url(r), psf_id,
-                                am_urlencode(r->pool, *relay_state), 
+                                am_urlencode(r->pool, *relay_state),
                                 content_type, charset);
 
     return OK;
@@ -1538,7 +1538,7 @@ const char *am_strip_cr(request_rec *r, const char *str)
     }
 
     output[i++] = '\0';
-    
+
     return (const char *)output;
 }
 
@@ -1575,7 +1575,7 @@ const char *am_add_cr(request_rec *r, const char *str)
     }
 
     output[i++] = '\0';
-    
+
     return (const char *)output;
 }
 
@@ -1641,14 +1641,14 @@ void am_strip_blank(const char **s)
  * Returns:
  *  The header value, or NULL on failure.
  */
-const char *am_get_mime_header(request_rec *r, const char *m, const char *h) 
+const char *am_get_mime_header(request_rec *r, const char *m, const char *h)
 {
     const char *line;
     char *l1;
     const char *value;
     char *l2;
 
-    for (line = am_xstrtok(r, m, "\n", &l1); line && *line; 
+    for (line = am_xstrtok(r, m, "\n", &l1); line && *line;
          line = am_xstrtok(r, NULL, "\n", &l1)) {
 
         am_strip_blank(&line);
@@ -1663,7 +1663,7 @@ const char *am_get_mime_header(request_rec *r, const char *m, const char *h)
    return NULL;
 }
 
-/* This function extracts an attribute from a header 
+/* This function extracts an attribute from a header
  *
  * Parameters:
  *  request_rec *r        The request
@@ -1677,21 +1677,21 @@ const char *am_get_mime_header(request_rec *r, const char *m, const char *h)
  *   useful for testing v.
  */
 const char *am_get_header_attr(request_rec *r, const char *h,
-                               const char *v, const char *a) 
+                               const char *v, const char *a)
 {
     const char *value;
     const char *attr;
     char *l1;
     const char *attr_value = NULL;
 
-    /* Looking for 
-     * header-value; item_name="item_value"\n 
+    /* Looking for
+     * header-value; item_name="item_value"\n
      */
     if ((value = am_xstrtok(r, h, ";", &l1)) == NULL)
         return NULL;
     am_strip_blank(&value);
 
-    /* If a header value was provided, check it */ 
+    /* If a header value was provided, check it */
     if ((v != NULL) && (strcasecmp(value, v) != 0))
         return NULL;
 
@@ -1705,17 +1705,17 @@ const char *am_get_header_attr(request_rec *r, const char *h,
 
         am_strip_blank(&attr);
 
-        attr_name = am_xstrtok(r, attr, "=", &l2); 
+        attr_name = am_xstrtok(r, attr, "=", &l2);
         if ((attr_name != NULL) && (strcasecmp(attr_name, a) == 0)) {
             if ((attr_value = am_xstrtok(r, NULL, "=", &l2)) != NULL)
                 am_strip_blank(&attr_value);
             break;
         }
     }
-  
+
     /* Remove leading and trailing quotes */
     if (attr_value != NULL) {
-        apr_size_t len; 
+        apr_size_t len;
 
         len = strlen(attr_value);
         if ((len > 1) && (attr_value[len - 1] == '\"'))
@@ -1723,7 +1723,7 @@ const char *am_get_header_attr(request_rec *r, const char *h,
         if (attr_value[0] == '\"')
             attr_value++;
     }
-    
+
     return attr_value;
 }
 
@@ -1751,7 +1751,7 @@ int am_has_header(request_rec *r, const char *h, const char *v)
  * Returns:
  *  The MIME section body, or NULL on failure.
  */
-const char *am_get_mime_body(request_rec *r, const char *mime) 
+const char *am_get_mime_body(request_rec *r, const char *mime)
 {
     const char lflf[] = "\n\n";
     const char *body;
@@ -1766,7 +1766,7 @@ const char *am_get_mime_body(request_rec *r, const char *mime)
 
     /* Strip tralling \n */
     if ((body_len = strlen(body)) >= 1) {
-        if (body[body_len - 1] == '\n') 
+        if (body[body_len - 1] == '\n')
             body = apr_pstrmemdup(r->pool, body, body_len - 1);
     }
 
@@ -1790,7 +1790,7 @@ am_get_service_url(request_rec *r, LassoProfile *profile, char *service_name)
     LassoProvider *provider;
     gchar *url;
 
-    provider = lasso_server_get_provider(profile->server, 
+    provider = lasso_server_get_provider(profile->server,
                                          profile->remote_providerID);
     if (LASSO_IS_PROVIDER(provider) == FALSE) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r,
@@ -1854,7 +1854,7 @@ token_type_str(TokenType token_type)
 static void dump_tokens(request_rec *r, apr_array_header_t *tokens)
 {
     apr_size_t i;
-    
+
     for (i = 0; i < tokens->nelts; i++) {
         Token token = APR_ARRAY_IDX(tokens, i, Token);
         AM_LOG_RERROR(APLOG_MARK, APLOG_DEBUG, 0, r,
@@ -2451,6 +2451,7 @@ int am_get_boolean_query_parameter(request_rec *r, const char *name,
  *    "AuthnRequestsSigned"
  *    "AssertionConsumerService PAOS 2"
  *    "SingleLogoutService HTTP-Redirect"
+ *    "SingleLogoutService HTTP-POST"
  *    "SingleLogoutService SOAP"
  *    "AssertionConsumerService HTTP-Artifact 1"
  *    "NameIDFormat"
