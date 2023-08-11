@@ -118,6 +118,9 @@ static const int default_enabled_invalidation_session = 0;
  */
 static const int default_send_expect_header = 1;
 
+/* By default, do not force HTTP URLs to be rewritten to be HTTPS. */
+static const int default_force_https_rewrites = 0;
+
 /* This function handles configuration directives which set a 
  * multivalued string slot in the module configuration (the destination
  * strucure is a hash).
@@ -1805,6 +1808,15 @@ const command_rec auth_mellon_commands[] = {
         "Send the Expect Header. Default is 'on'."
         ),
 
+    AP_INIT_FLAG(
+        "MellonForceHttpsUrlRewrites",
+        ap_set_flag_slot,
+        (void *)APR_OFFSETOF(am_dir_cfg_rec, force_https_rewrites),
+        OR_AUTHCFG,
+        "Whether to force conversion of generated HTTP URLs to HTTPS [on|off]"
+        " Default value is \"off\"."
+        ),
+
     {NULL}
 };
 
@@ -1915,6 +1927,8 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->enabled_invalidation_session = default_enabled_invalidation_session;
 
     dir->send_expect_header = default_send_expect_header;
+
+    dir->force_https_rewrites = default_force_https_rewrites;
 
     return dir;
 }
@@ -2186,6 +2200,11 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
         (add_cfg->send_expect_header != default_send_expect_header ?
          add_cfg->send_expect_header :
          base_cfg->send_expect_header);
+
+    new_cfg->force_https_rewrites =
+        (add_cfg->force_https_rewrites != default_force_https_rewrites ?
+         add_cfg->force_https_rewrites :
+         base_cfg->force_https_rewrites);
 
     return new_cfg;
 }

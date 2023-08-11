@@ -634,6 +634,20 @@ MellonDiagnosticsEnable Off
         # Default: rsa-sha256
         # MellonSignatureMethod
 
+        # Force all generated URLs to be using HTTPS, not HTTP, regardless of the detected
+        # inbound protocol. This is really useful if mod_auth_mellon is running on a server which
+        # has an SSL reverse proxy sitting in front of it. Because the SSL connection terminates
+        # at the proxy, Apache needs to be explicitly told "yes, this is really HTTPS, even though
+        # you can't detect it".
+        #
+        # Note: This configuration variable is NOT "force use of HTTPS to my server for inbound
+        # connections". That can be done in a variety of ways with the base Apache configuration.
+        # This directive only deals with the case where Apache can't autodetect the scheme used
+        # by the client correctly.
+        #
+        # Default: Off
+        # MellonForceHttpsUrlRewrites On
+
 </Location>
 ```
 

@@ -205,6 +205,13 @@ static int am_create_request(request_rec *r)
 }
 
 
+static const char *am_http_scheme(const request_rec *r)
+{
+    am_dir_cfg_rec *d = am_get_dir_cfg(r);
+    return d->force_https_rewrites ? "https" : NULL;
+}
+
+
 static void register_hooks(apr_pool_t *p)
 {
     /* Our handler needs to run before mod_proxy so that it can properly
@@ -218,6 +225,7 @@ static void register_hooks(apr_pool_t *p)
     ap_hook_post_config(am_global_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(am_child_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_create_request(am_create_request, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_http_scheme(am_http_scheme, NULL, NULL, APR_HOOK_MIDDLE);
 
     /* Add the hook to handle requests to the mod_auth_mellon endpoint.
      *

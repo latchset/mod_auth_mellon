@@ -664,6 +664,10 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
                     "%sMellonECPSendIDPList (ecp_send_idplist): %s\n",
                     indent(level+1), CFG_VALUE(cfg, ecp_send_idplist) ? "On":"Off");
 
+    apr_file_printf(diag_cfg->fd,
+                    "%sMellonForceHttpsUrlRewrites (force_https_rewrites): %s\n",
+                    indent(level+1), CFG_VALUE(cfg, force_https_rewrites) ? "On":"Off");
+
     for (n_items = 0; cfg->redirect_domains[n_items] != NULL; n_items++);
     apr_file_printf(diag_cfg->fd,
                     "%sMellonRedirectDomains (redirect_domains): %d items\n",

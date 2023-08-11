@@ -334,6 +334,9 @@ typedef struct am_dir_cfg_rec {
     /* Send Expect Header. */
     int send_expect_header;
 
+    /* Whether to force conversion of generated HTTP URLs to HTTPS */
+    int force_https_rewrites;
+
 } am_dir_cfg_rec;
 
 /* Bitmask for PAOS service options */
