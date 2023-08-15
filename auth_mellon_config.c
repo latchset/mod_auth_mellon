@@ -367,13 +367,6 @@ static const char *am_set_idp_string_slot(cmd_parms *cmd,
     am_file_data_t *idp_file_data = NULL;
     am_file_data_t *chain_file_data = NULL;
 
-#ifndef HAVE_lasso_server_load_metadata
-    if (chain != NULL)
-        return apr_psprintf(cmd->pool, "Cannot specify validating chain "
-                            "for %s since lasso library lacks "
-                            "lasso_server_load_metadata()", cmd->cmd->name);
-#endif /* HAVE_lasso_server_load_metadata */
-
     idp_file_data = am_file_data_new(pconf, metadata);
     if (am_file_stat(idp_file_data) != APR_SUCCESS) {
         return idp_file_data->strerror;
@@ -415,7 +408,6 @@ static const char *am_set_idp_ignore_slot(cmd_parms *cmd,
                                           int argc,
                                           char *const argv[])
 {
-#ifdef HAVE_lasso_server_load_metadata
     server_rec *s = cmd->server;
     apr_pool_t *pconf = s->process->pconf;
     am_dir_cfg_rec *cfg = (am_dir_cfg_rec *)struct_ptr;
@@ -438,13 +430,6 @@ static const char *am_set_idp_ignore_slot(cmd_parms *cmd,
     }
 
     return NULL;
-
-#else /* HAVE_lasso_server_load_metadata */
-
-    return apr_psprintf(cmd->pool, "Cannot use %s since lasso library lacks "
-                        "lasso_server_load_metadata()", cmd->cmd->name);
-
-#endif /* HAVE_lasso_server_load_metadata */
 }
 
 
@@ -1096,15 +1081,7 @@ static const char *am_set_do_not_verify_logout_signature(cmd_parms *cmd,
                                           void *struct_ptr,
                                           const char *key)
 {
-#ifdef HAVE_lasso_profile_set_signature_verify_hint
     return am_set_hash_string_slot(cmd, struct_ptr, key, NULL);
-#else
-    return apr_pstrcat(cmd->pool, cmd->cmd->name,
-                       " is not usable as modmellon was compiled against "
-                       "a version of the lasso library which miss the "
-                       "function lasso_profile_set_signature_verify_hint.",
-                       NULL);
-#endif
 }
 
 /* This function handles the MellonMergeEnvVars configuration directive,

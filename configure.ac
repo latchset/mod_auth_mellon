@@ -58,15 +58,6 @@ AC_SUBST(APXS2)
 # We need the lasso library for SAML2 communication.
 PKG_CHECK_MODULES(LASSO, lasso)
 saved_LIBS=$LIBS; LIBS="$LIBS $LASSO_LIBS";
-AC_CHECK_LIB(lasso, lasso_server_new_from_buffers,
-	     [AC_DEFINE([HAVE_lasso_server_new_from_buffers],[],
-             [lasso library exports lasso_server_new_from_buffers])])
-AC_CHECK_LIB(lasso, lasso_server_load_metadata,
-             [AC_DEFINE([HAVE_lasso_server_load_metadata],[],
-             [lasso library exports lasso_server_load_metadata])])
-AC_CHECK_LIB(lasso, lasso_profile_set_signature_verify_hint,
-             [AC_DEFINE([HAVE_lasso_profile_set_signature_verify_hint],[],
-             [lasso library exports lasso_profile_set_signature_verify_hint])])
 AC_CHECK_LIB(lasso, lasso_ecp_request_new,
              [AC_DEFINE([HAVE_ECP],[],
              [lasso library supports ECP profile])])

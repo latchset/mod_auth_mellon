@@ -33,7 +33,6 @@ APLOG_USE_MODULE(auth_mellon);
  */
 
 
-#ifdef HAVE_lasso_server_new_from_buffers
 /* This function generates optional metadata for a given element
  *
  * Parameters:
@@ -211,7 +210,6 @@ static char *am_generate_metadata(apr_pool_t *p, request_rec *r)
       sp_entity_id, cfg->sp_entity_id ? "" : "metadata", 
       cert, url, url, url, url, url, am_optional_metadata(p, r));
 }
-#endif /* HAVE_lasso_server_new_from_buffers */
 
 
 /*
@@ -228,16 +226,6 @@ static guint am_server_add_providers(am_dir_cfg_rec *cfg, request_rec *r)
 {
     apr_size_t index;
 
-#ifndef HAVE_lasso_server_load_metadata
-    const char *idp_public_key_file;
-
-    if (cfg->idp_metadata->nelts == 1)
-        idp_public_key_file = cfg->idp_public_key_file ?
-            cfg->idp_public_key_file->path : NULL;
-    else
-        idp_public_key_file = NULL;
-#endif /* ! HAVE_lasso_server_load_metadata */
-
     if (cfg->idp_metadata->nelts == 0) {
             AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                           "Error, URI \"%s\" has no IdP's defined", r->uri);
@@ -247,9 +235,7 @@ static guint am_server_add_providers(am_dir_cfg_rec *cfg, request_rec *r)
     for (index = 0; index < cfg->idp_metadata->nelts; index++) {
         const am_metadata_t *idp_metadata;
         int error;
-#ifdef HAVE_lasso_server_load_metadata
         GList *loaded_idp = NULL;
-#endif /* HAVE_lasso_server_load_metadata */
 
         idp_metadata = &( ((const am_metadata_t*)cfg->idp_metadata->elts) [index] );
 
@@ -260,7 +246,6 @@ static guint am_server_add_providers(am_dir_cfg_rec *cfg, request_rec *r)
                                   "Loading IdP metadata chain");
         }
 
-#ifdef HAVE_lasso_server_load_metadata
         error = lasso_server_load_metadata(cfg->server,
                                            LASSO_PROVIDER_ROLE_IDP,
                                            idp_metadata->metadata->path,
@@ -286,15 +271,6 @@ static guint am_server_add_providers(am_dir_cfg_rec *cfg, request_rec *r)
             g_list_free(loaded_idp);
         }
 
-#else /* HAVE_lasso_server_load_metadata */
-        error = lasso_server_add_provider(cfg->server,
-                                          LASSO_PROVIDER_ROLE_IDP,
-                                          idp_metadata->metadata->path,
-                                          idp_public_key_file,
-                                          cfg->idp_ca_file ?
-                                          cfg->idp_ca_file->path : NULL);
-#endif /* HAVE_lasso_server_load_metadata */
-
         if (error != 0) {
             AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                           "Error adding metadata \"%s\" to "
@@ -317,7 +293,6 @@ static LassoServer *am_get_lasso_server(request_rec *r)
     if(cfg->server == NULL) {
         if(cfg->sp_metadata_file == NULL) {
 
-#ifdef HAVE_lasso_server_new_from_buffers
             /*
              * Try to generate missing metadata
              */
@@ -326,29 +301,14 @@ static LassoServer *am_get_lasso_server(request_rec *r)
             cfg->sp_metadata_file->rv = APR_SUCCESS;
             cfg->sp_metadata_file->generated = true;
             cfg->sp_metadata_file->contents = am_generate_metadata(pool, r);
-#else
-            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                          "Missing MellonSPMetadataFile option.");
-            apr_thread_mutex_unlock(cfg->server_mutex);
-            return NULL;
-#endif /* HAVE_lasso_server_new_from_buffers */
         }
 
-#ifdef HAVE_lasso_server_new_from_buffers
         cfg->server = lasso_server_new_from_buffers(cfg->sp_metadata_file->contents,
                                                     cfg->sp_private_key_file ?
                                                     cfg->sp_private_key_file->contents : NULL,
                                                     NULL,
                                                     cfg->sp_cert_file ?
                                                     cfg->sp_cert_file->contents : NULL);
-#else
-        cfg->server = lasso_server_new(cfg->sp_metadata_file->path,
-                                       cfg->sp_private_key_file ?
-                                       cfg->sp_private_key_file->path : NULL,
-                                       NULL,
-                                       cfg->sp_cert_file ?
-                                       cfg->sp_cert_file->path : NULL);
-#endif
         if (cfg->server == NULL) {
 	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
 			  "Error initializing lasso server object. Please"
@@ -711,7 +671,6 @@ static int am_handle_logout_request(request_rec *r,
 
     /* Process the logout message. Ignore missing signature. */
     res = lasso_logout_process_request_msg(logout, msg);
-#ifdef HAVE_lasso_profile_set_signature_verify_hint
     if(res != 0 && res != LASSO_DS_ERROR_SIGNATURE_NOT_FOUND &&
        logout->parent.remote_providerID != NULL) {
         if (apr_hash_get(cfg->do_not_verify_logout_signature,
@@ -722,7 +681,6 @@ static int am_handle_logout_request(request_rec *r,
             res = lasso_logout_process_request_msg(logout, msg);
         }
     }
-#endif
     if(res != 0 && res != LASSO_DS_ERROR_SIGNATURE_NOT_FOUND) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error processing logout request message."
@@ -915,7 +873,6 @@ static int am_handle_logout_response_cmn(request_rec *r, LassoLogout *logout,
     res = lasso_logout_process_response_msg(logout, input);
     am_diag_log_lasso_node(r, 0, LASSO_PROFILE(logout)->response,
                            "SAML Response (%s):", __func__);
-#ifdef HAVE_lasso_profile_set_signature_verify_hint
     if(res != 0 && res != LASSO_DS_ERROR_SIGNATURE_NOT_FOUND &&
        logout->parent.remote_providerID != NULL) {
         if (apr_hash_get(cfg->do_not_verify_logout_signature,
@@ -926,7 +883,6 @@ static int am_handle_logout_response_cmn(request_rec *r, LassoLogout *logout,
             res = lasso_logout_process_response_msg(logout, input);
         }
     }
-#endif
     if(res != 0) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Unable to process logout response."
@@ -2826,7 +2782,6 @@ static int am_handle_repost(request_rec *r)
  */
 static int am_handle_metadata(request_rec *r)
 {
-#ifdef HAVE_lasso_server_new_from_buffers
     am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
     LassoServer *server;
     const char *data;
@@ -2848,12 +2803,6 @@ static int am_handle_metadata(request_rec *r)
     ap_rputs(data, r);
 
     return OK;
-#else  /* ! HAVE_lasso_server_new_from_buffers */
-
-    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                  "metadata publishing require lasso 2.2.2 or higher");
-    return HTTP_NOT_FOUND;
-#endif
 }
 
 

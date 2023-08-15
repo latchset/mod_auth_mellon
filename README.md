@@ -11,7 +11,7 @@ mod_auth_mellon has four dependencies:
  * pkg-config
  * Apache (>=2.0)
  * OpenSSL
- * lasso (>=2.1)
+ * lasso (>=2.4)
 
 You will also require development headers and tools for all of the
 dependencies.
