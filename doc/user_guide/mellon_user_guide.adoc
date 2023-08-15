@@ -3523,8 +3523,6 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
       XotXjsiL1KtqNW1k/oVtLwNP0trqqh9npWV+R3pDTckxIHQhOvs5VqQZANViH6mp
       YK53b9Bhr0TpIOKetFY68kQ=
       -----END CERTIFICATE-----
-  MellonIdPPublicKeyFile (idp_public_key_file):
-    file_data: NULL
   MellonIdPCAFile (idp_ca_file):
     file_data: NULL
   MellonIdPMetadataFile (idp_metadata): 1 items
@@ -3922,8 +3920,6 @@ Mellon Directory Configuration for URL: /mellon/login
       XotXjsiL1KtqNW1k/oVtLwNP0trqqh9npWV+R3pDTckxIHQhOvs5VqQZANViH6mp
       YK53b9Bhr0TpIOKetFY68kQ=
       -----END CERTIFICATE-----
-  MellonIdPPublicKeyFile (idp_public_key_file):
-    file_data: NULL
   MellonIdPCAFile (idp_ca_file):
     file_data: NULL
   MellonIdPMetadataFile (idp_metadata): 1 items
@@ -4330,8 +4326,6 @@ Mellon Directory Configuration for URL: /mellon/postResponse
       XotXjsiL1KtqNW1k/oVtLwNP0trqqh9npWV+R3pDTckxIHQhOvs5VqQZANViH6mp
       YK53b9Bhr0TpIOKetFY68kQ=
       -----END CERTIFICATE-----
-  MellonIdPPublicKeyFile (idp_public_key_file):
-    file_data: NULL
   MellonIdPCAFile (idp_ca_file):
     file_data: NULL
   MellonIdPMetadataFile (idp_metadata): 1 items
@@ -4822,8 +4816,6 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
       XotXjsiL1KtqNW1k/oVtLwNP0trqqh9npWV+R3pDTckxIHQhOvs5VqQZANViH6mp
       YK53b9Bhr0TpIOKetFY68kQ=
       -----END CERTIFICATE-----
-  MellonIdPPublicKeyFile (idp_public_key_file):
-    file_data: NULL
   MellonIdPCAFile (idp_ca_file):
     file_data: NULL
   MellonIdPMetadataFile (idp_metadata): 1 items
@@ -5107,8 +5099,6 @@ Mellon Directory Configuration for URL: /favicon.ico
       XotXjsiL1KtqNW1k/oVtLwNP0trqqh9npWV+R3pDTckxIHQhOvs5VqQZANViH6mp
       YK53b9Bhr0TpIOKetFY68kQ=
       -----END CERTIFICATE-----
-  MellonIdPPublicKeyFile (idp_public_key_file):
-    file_data: NULL
   MellonIdPCAFile (idp_ca_file):
     file_data: NULL
   MellonIdPMetadataFile (idp_metadata): 1 items

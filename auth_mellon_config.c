@@ -647,8 +647,8 @@ static const char *am_set_secure_slots(cmd_parms *cmd,
     return NULL;
 }
 
-/* This function handles the obsolete MellonDecoder configuration directive.
- * It is a no-op.
+/* This function handles the obsolete configuration directives.
+ * It is a no-op but logs a warning on startup.
  *
  * Parameters:
  *  cmd_parms *cmd       The command structure for this configuration
@@ -660,10 +660,13 @@ static const char *am_set_secure_slots(cmd_parms *cmd,
  * Returns:
  *  NULL
  */
-static const char *am_set_decoder_slot(cmd_parms *cmd,
+static const char *am_set_obsolete_option(cmd_parms *cmd,
                                        void *struct_ptr,
                                        const char *arg)
 {
+    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, cmd->server,
+                 "Obsolete option %s set which has no effect",
+                 cmd->cmd->name);
     return NULL;
 }
 
@@ -1394,7 +1397,7 @@ const command_rec auth_mellon_commands[] = {
         ),
     AP_INIT_TAKE1(
         "MellonDecoder",
-        am_set_decoder_slot,
+        am_set_obsolete_option,
         NULL,
         OR_AUTHCFG,
         "Obsolete option, now a no-op for backwards compatibility."
@@ -1591,10 +1594,10 @@ const command_rec auth_mellon_commands[] = {
         ),
     AP_INIT_TAKE1(
         "MellonIdPPublicKeyFile",
-        am_set_file_pathname_slot,
-        (void *)APR_OFFSETOF(am_dir_cfg_rec, idp_public_key_file),
+        am_set_obsolete_option,
+        NULL,
         OR_AUTHCFG,
-        "Full path to pem file with the public key for the IdP."
+        "Obsolete option, now a no-op for backwards compatibility."
         ),
     AP_INIT_TAKE1(
         "MellonIdPCAFile",
@@ -1863,7 +1866,6 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->sp_private_key_file = NULL;
     dir->sp_cert_file = NULL;
     dir->idp_metadata = apr_array_make(p, 0, sizeof(am_metadata_t));
-    dir->idp_public_key_file = NULL;
     dir->idp_ca_file = NULL;
     dir->idp_ignore = NULL;
     dir->login_path = default_login_path;
@@ -1916,7 +1918,6 @@ static bool cfg_can_inherit_lasso_server(const am_dir_cfg_rec *add_cfg)
         || add_cfg->sp_cert_file != NULL)
         return false;
     if (add_cfg->idp_metadata->nelts > 0
-        || add_cfg->idp_public_key_file != NULL
         || add_cfg->idp_ca_file != NULL
         || add_cfg->idp_ignore != NULL)
         return false;
@@ -2065,10 +2066,6 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
     new_cfg->idp_metadata = (add_cfg->idp_metadata->nelts ?
                              add_cfg->idp_metadata :
                              base_cfg->idp_metadata);
-
-    new_cfg->idp_public_key_file = (add_cfg->idp_public_key_file ?
-                                    add_cfg->idp_public_key_file :
-                                    base_cfg->idp_public_key_file);
 
     new_cfg->idp_ca_file = (add_cfg->idp_ca_file ?
                             add_cfg->idp_ca_file :

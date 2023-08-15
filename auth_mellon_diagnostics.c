@@ -501,8 +501,6 @@ am_diag_log_dir_cfg(request_rec *r, int level, am_dir_cfg_rec *cfg,
                           "MellonSPPrivateKeyFile (sp_private_key_file):");
     am_diag_log_file_data(r, level+1, cfg->sp_cert_file,
                           "MellonSPCertFile (sp_cert_file):");
-    am_diag_log_file_data(r, level+1, cfg->idp_public_key_file,
-                          "MellonIdPPublicKeyFile (idp_public_key_file):");
     am_diag_log_file_data(r, level+1, cfg->idp_ca_file,
                           "MellonIdPCAFile (idp_ca_file):");
 

@@ -477,13 +477,6 @@ MellonDiagnosticsEnable Off
         # Default: None set.
         #MellonIdPMetadataGlob /etc/apache2/mellon/*-metadata.xml
 
-        # MellonIdpPublicKeyFile is the full path of the public key of the
-        # IdP. This parameter is optional if the public key is embedded
-        # in the IdP's metadata file, or if a certificate authority is
-        # used. This parameter cannot be used if multiple IdP are configured.
-        # Default: None set.
-        MellonIdPPublicKeyFile /etc/apache2/mellon/idp-public-key.pem
-
         # MellonIdPCAFile is the full path to the certificate of the
         # certificate authority. This can be used instead of an
         # certificate for the IdP.

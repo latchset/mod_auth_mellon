@@ -266,7 +266,6 @@ typedef struct am_dir_cfg_rec {
     am_file_data_t *sp_private_key_file;
     am_file_data_t *sp_cert_file;
     apr_array_header_t *idp_metadata;
-    am_file_data_t *idp_public_key_file;
     am_file_data_t *idp_ca_file;
     GList *idp_ignore;
 

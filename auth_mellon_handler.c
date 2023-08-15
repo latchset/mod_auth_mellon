@@ -322,9 +322,8 @@ static LassoServer *am_get_lasso_server(request_rec *r)
         if (am_server_add_providers(cfg, r) == 0) {
 	    AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
 			  "Error adding IdP to lasso server object. Please"
-			  " verify the following configuration directives:"
-			  " MellonIdPMetadataFile and"
-                          " MellonIdPPublicKeyFile.");
+			  " verify the following configuration directive:"
+			  " MellonIdPMetadataFile.");
 
 	    lasso_server_destroy(cfg->server);
 	    cfg->server = NULL;
