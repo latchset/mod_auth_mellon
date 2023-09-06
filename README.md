@@ -658,6 +658,9 @@ The following is an example of metadata for the example configuration:
     <SingleLogoutService
         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
         Location="https://example.com/secret/endpoint/logout" />
+    <SingleLogoutService
+        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        Location="https://example.com/secret/endpoint/logout" />
     <NameIDFormat>
       urn:oasis:names:tc:SAML:2.0:nameid-format:transient
     </NameIDFormat>

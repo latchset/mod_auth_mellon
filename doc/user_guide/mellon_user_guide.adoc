@@ -1105,17 +1105,20 @@ our example authentication.
    <SingleLogoutService <!--10-->
      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
      Location="https://mellon.example.com/mellon/logout" />
-   <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat> <!--11-->
-   <AssertionConsumerService <!--12-->
+   <SingleLogoutService <!--11-->
+     Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+     Location="https://mellon.example.com/mellon/logout" />
+   <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat> <!--12-->
+   <AssertionConsumerService <!--13-->
      index="0"
-     isDefault="true" <!--13-->
+     isDefault="true" <!--14-->
      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
      Location="https://mellon.example.com/mellon/postResponse" />
-   <AssertionConsumerService <!--14-->
+   <AssertionConsumerService <!--15-->
      index="1"
      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"
      Location="https://mellon.example.com/mellon/artifactResponse" />
-   <AssertionConsumerService <!--15-->
+   <AssertionConsumerService <!--16-->
      index="2"
      Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
      Location="https://mellon.example.com/mellon/paosResponse" />
@@ -1173,21 +1176,24 @@ this URL location.
 <10> SAML endpoint. Logout messages using the HTTP-Redirect binding
 are sent to this URL location.
 
-<11> Zero or more `<NameIDFormat>` elements enumerate the name
+<11> SAML endpoint. Logout messages using the HTTP-POST binding
+are sent to this URL location.
+
+<12> Zero or more `<NameIDFormat>` elements enumerate the name
 identifier formats supported by this entity. See <<name_id>>  for
 details.
 
-<12> [[sp_metadata_acs]] SAML endpoint. Assertions using the HTTP-POST binding are
+<13> [[sp_metadata_acs]] SAML endpoint. Assertions using the HTTP-POST binding are
 delivered to this URL location.
 
-<13> For indexed endpoints if `isDefault` is true then this is the
+<14> For indexed endpoints if `isDefault` is true then this is the
 default endpoint to select. If no endpoint claims to be the default
 then the first endpoint in the list is the default.
 
-<14> SAML endpoint. Assertions using the HTTP-Artifact binding are
+<15> SAML endpoint. Assertions using the HTTP-Artifact binding are
 delivered to this URL location.
 
-<15> SAML endpoint. Assertions using the PAOS binding are delivered to
+<16> SAML endpoint. Assertions using the PAOS binding are delivered to
 this URL location. PAOS is used the the Enhanced Client or Proxy
 Profile (a.k.a. ECP).
 
@@ -1222,17 +1228,20 @@ authentication.
     <SingleLogoutService <!--9-->
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
       Location="https://rhsso.example.com:8443/auth/realms/test/protocol/saml" />
-    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat> <!--10-->
-    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat> <!--10-->
-    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</NameIDFormat> <!--10-->
-    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat> <!--10-->
-    <SingleSignOnService <!--11-->
+    <SingleLogoutService <!--10-->
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       Location="https://rhsso.example.com:8443/auth/realms/test/protocol/saml" />
+    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat> <!--11-->
+    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat> <!--11-->
+    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</NameIDFormat> <!--11-->
+    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat> <!--11-->
     <SingleSignOnService <!--12-->
-      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       Location="https://rhsso.example.com:8443/auth/realms/test/protocol/saml" />
     <SingleSignOnService <!--13-->
+      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+      Location="https://rhsso.example.com:8443/auth/realms/test/protocol/saml" />
+    <SingleSignOnService <!--14-->
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
       Location="https://rhsso.example.com:8443/auth/realms/test/protocol/saml" />
     </IDPSSODescriptor>
@@ -1281,19 +1290,22 @@ sent to this URL location.
 <9> SAML endpoint. Logout messages using the HTTP-Redirect binding are
 sent to this URL location.
 
-<10> Zero or more `<NameIDFormat>` elements enumerate the name
+<10> SAML endpoint. Logout messages using the HTTP-POST binding are
+sent to this URL location.
+
+<11> Zero or more `<NameIDFormat>` elements enumerate the name
 identifier formats supported by this entity. See <<name_id>> for more
 details.
 
-<11> SAML endpoint. `<AuthnRequest>` messages using the HTTP-POST
+<12> SAML endpoint. `<AuthnRequest>` messages using the HTTP-POST
 binding are sent by the SP to this URL location to establish a Single
 Sign-On Session.
 
-<12> SAML endpoint. `<AuthnRequest>` messages using the HTTP-Redirect
+<13> SAML endpoint. `<AuthnRequest>` messages using the HTTP-Redirect
 binding are sent by the SP to this URL location to establish a Single
 Sign-On Session.
 
-<13> SAML endpoint. `<AuthnRequest>` messages using the SOAP
+<14> SAML endpoint. `<AuthnRequest>` messages using the SOAP
 binding are sent by the SP to this URL location to establish a Single
 Sign-On Session.
 
@@ -1687,6 +1699,7 @@ Host:                                     mellon.example.com
 Endpoints:
 SingleLogoutService (SOAP):               https://mellon.example.com/mellon/logout
 SingleLogoutService (HTTP-Redirect):      https://mellon.example.com/mellon/logout
+SingleLogoutService (HTTP-POST):          https://mellon.example.com/mellon/logout
 AssertionConsumerService (HTTP-POST):     https://mellon.example.com/mellon/postResponse
 AssertionConsumerService (HTTP-Artifact): https://mellon.example.com/mellon/artifactResponse
 AssertionConsumerService (PAOS):          https://mellon.example.com/mellon/paosResponse
@@ -3075,6 +3088,9 @@ Service `Location` declarations in your SP metadata. See
   <SingleLogoutService
     Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
     Location="https://mellon.example.com##/mellon/##logout" />  <!--1-->
+  <SingleLogoutService
+    Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+    Location="https://mellon.example.com##/mellon/##logout" />  <!--1-->
   <AssertionConsumerService
     index="0"
     isDefault="true"
@@ -3456,6 +3472,9 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
          <SingleLogoutService
            Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
            Location="https://mellon.example.com/mellon/logout" />
+         <SingleLogoutService
+           Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+           Location="https://mellon.example.com/mellon/logout" />
          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
          <AssertionConsumerService
            index="0"
@@ -3670,6 +3689,9 @@ Loading SP Metadata
        <SingleLogoutService
          Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
          Location="https://mellon.example.com/mellon/logout" />
+       <SingleLogoutService
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+         Location="https://mellon.example.com/mellon/logout" />
        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
        <AssertionConsumerService
          index="0"
@@ -3854,6 +3876,9 @@ Mellon Directory Configuration for URL: /mellon/login
            Location="https://mellon.example.com/mellon/logout" />
          <SingleLogoutService
            Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+           Location="https://mellon.example.com/mellon/logout" />
+         <SingleLogoutService
+           Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
            Location="https://mellon.example.com/mellon/logout" />
          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
          <AssertionConsumerService
@@ -4066,6 +4091,9 @@ Loading SP Metadata
        <SingleLogoutService
          Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
          Location="https://mellon.example.com/mellon/logout" />
+       <SingleLogoutService
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+         Location="https://mellon.example.com/mellon/logout" />
        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
        <AssertionConsumerService
          index="0"
@@ -4262,6 +4290,9 @@ Mellon Directory Configuration for URL: /mellon/postResponse
            Location="https://mellon.example.com/mellon/logout" />
          <SingleLogoutService
            Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+           Location="https://mellon.example.com/mellon/logout" />
+         <SingleLogoutService
+           Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
            Location="https://mellon.example.com/mellon/logout" />
          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
          <AssertionConsumerService
@@ -4473,6 +4504,9 @@ Loading SP Metadata
          Location="https://mellon.example.com/mellon/logout" />
        <SingleLogoutService
          Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+         Location="https://mellon.example.com/mellon/logout" />
+       <SingleLogoutService
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
          Location="https://mellon.example.com/mellon/logout" />
        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
        <AssertionConsumerService
@@ -4754,6 +4788,9 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
            Location="https://mellon.example.com/mellon/logout" />
          <SingleLogoutService
            Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+           Location="https://mellon.example.com/mellon/logout" />
+         <SingleLogoutService
+           Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
            Location="https://mellon.example.com/mellon/logout" />
          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
          <AssertionConsumerService
@@ -5039,6 +5076,9 @@ Mellon Directory Configuration for URL: /favicon.ico
            Location="https://mellon.example.com/mellon/logout" />
          <SingleLogoutService
            Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+           Location="https://mellon.example.com/mellon/logout" />
+         <SingleLogoutService
+           Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
            Location="https://mellon.example.com/mellon/logout" />
          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
          <AssertionConsumerService

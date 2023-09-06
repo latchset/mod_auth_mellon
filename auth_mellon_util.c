@@ -2451,6 +2451,7 @@ int am_get_boolean_query_parameter(request_rec *r, const char *name,
  *    "AuthnRequestsSigned"
  *    "AssertionConsumerService PAOS 2"
  *    "SingleLogoutService HTTP-Redirect"
+ *    "SingleLogoutService HTTP-POST"
  *    "SingleLogoutService SOAP"
  *    "AssertionConsumerService HTTP-Artifact 1"
  *    "NameIDFormat"
