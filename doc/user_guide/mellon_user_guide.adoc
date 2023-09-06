@@ -59,7 +59,7 @@ The SAML technical committee has published the
 https://www.oasis-open.org/committees/download.php/27819/sstc-saml-tech-overview-2.0-cd-02.pdf[Security
 Assertion Markup Language (SAML) V2.0 Technical Overview]. This is an
 excellent high-level overview of SAML and worth reading to familiarize
-yourself with general SAML operation and terminology. 
+yourself with general SAML operation and terminology.
 
 SAML is a large complex standard that currently comprises 10 individual
 specifications whose total content is hundreds of pages of printed
@@ -148,7 +148,7 @@ The _Web Browser SSO Profile_ is the best known <<saml_profiles,SAML
 profile>> and the one Mellon focuses on. Your ability to configure
 Mellon and diagnose Mellon deployment issues will be greatly enhanced
 if you understand this flow and the two SAML messages conveyed in the
-flow, _SAML AuthnRequest_ and _SAML Assertion Response_. 
+flow, _SAML AuthnRequest_ and _SAML Assertion Response_.
 
 
 
@@ -292,7 +292,7 @@ As long as the user's browser has not disabled scripts it will
 immediately post the form data to the _AssertionConsumerService_ URL
 in the forms action attribute. If scripts have been disabled the HTML
 will instruct the user to click the `Submit` button to post the form
-data. 
+data.
 
 === entityID [[entityID]]
 
@@ -895,10 +895,10 @@ instance there are 2 values, _ipausers_ and _openstack-users_.
 
 The above `<Assertion>` response is conveyed back to the SP using the
 _HTTP Post Binding_. You may wish to review <<http_post>>. The "on the
-wire" version of this `<Assertion>` response and its associated 
+wire" version of this `<Assertion>` response and its associated
 parameters can be seen in <<assertion_response_wire>>. Once again we see
-the need for SAML tools because it is impossible to view the XML 
-message and its associated parameters give the contents of the HTTP 
+the need for SAML tools because it is impossible to view the XML
+message and its associated parameters give the contents of the HTTP
 response.
 
 === SAML Endpoints [[endpoints]]
@@ -926,7 +926,7 @@ pair. The service component identifies what action is hosted by this
 endpoint. Examples of common SAML services you are likely to encounter
 are:
 
-SingleSignOnService:: 
+SingleSignOnService::
 Authenticate a user and establish a session for them. This is an IdP
 service, it's where a SP sends its `<AuthnRequest>` message.
 
@@ -1366,7 +1366,7 @@ There are two independent steps necessary to enable Mellon.
 
 1. Load the mod_auth_mellon Apache module at Apache start-up.
 2. Configure Mellon to operate on specific URLs with specific SAML
-   properties. 
+   properties.
 
 ==== Load mod_auth_mellon [[load_mod_auth_mellon]]
 
@@ -1621,7 +1621,7 @@ auth::
 Mellon will populate the environment with information about
 the user if he is authorized. If he is authenticated
 (logged in), but not authorized (according to the
-`MellonRequire` and `MellonCond` directives, then Mellon will 
+`MellonRequire` and `MellonCond` directives, then Mellon will
 return a 403 Forbidden error. If he isn't authenticated
 then Mellon will redirect to the login page of the configured IdP.
 
@@ -1658,7 +1658,7 @@ installs this script in
 configuration options. The metadata can be downloaded from the
 `$MellonEndpointPath/metadata` URL. Mellon only self-generates its
 metadata if the `MellonSPMetadataFile` configuration parameter is not
-defined, otherwise if the `MellonSPMetadataFile` is defined the 
+defined, otherwise if the `MellonSPMetadataFile` is defined the
 `$MellonEndpointPath/metadata` download URL will return the contents
 of the `MellonSPMetadataFile`.
 
@@ -1896,17 +1896,17 @@ The current list of Mellon endpoints (handlers) is:
 
 postResponse::
 The _AssertionConsumerService_ endpoint using the SAML HTTP-POST
-binding. 
+binding.
 
 artifactResponse::
 The _AssertionConsumerService_ endpoint for SAML artifacts. SAML artifacts
 provide an indirect method to convey data. An artifact is an
 identifier that points to data. Requesting data using the artifact
-identifier returns the associated data. 
+identifier returns the associated data.
 
 paosResponse::
 The AssertionConsumerService endpoint using the SAML PAOS
-binding. 
+binding.
 
 login::
 Mellon internal endpoint used to start the authentication process with
@@ -1921,7 +1921,7 @@ A HTTP GET request on this endpoint will return the SP's metadata.
 
 repost::
 Mellon internal endpoint which replays POST data from the original
-request. 
+request.
 
 auth::
 Mellon internal endpoint retained for backwards compatibility.
@@ -1995,7 +1995,7 @@ concerning session lifetime.
 When you receive a SAML assertion authenticating a subject, the
 assertion will likely include additional attributes provided by the
 IdP concerning the subject. Examples include the user's email address
-or the groups they are a member of. You may wish to review the 
+or the groups they are a member of. You may wish to review the
 <<assertion_response,assertion example>> and look for
 `<saml:Attribute>` and `<saml:AttributeValue>` elements to see how the
 IdP communicates these attributes. There is no fixed set of attributes
@@ -2183,7 +2183,7 @@ The `value` parameter may contain format specifiers which are
 substituted prior to performing an operation on the value. Format
 specifiers always begin with the `%` character. Here are the valid
 format specifiers:
-        
+
 %n:: Regular expression backreference. Regular expressions may
 contain multiple sub-matches (often referred to as a regular
 expression group). To refer to a specific sub-match in the regular
@@ -2195,7 +2195,7 @@ otherwise there would be no backreference to refer to.
 
 %\{ENV:x}:: Substitute the Apache environment variable `x`. If the
  environment variable does not exist substitute the empty string
- instead. 
+ instead.
 
 %%:: Quote a `%` to prevent it from being interpreted as a the
 beginning of a format specifier.
@@ -2225,7 +2225,7 @@ expression. If the regular expression is found in the attribute value
 the condition evaluates to `True`, `False` otherwise.
 
 REF:: Used with REG, track regular expression back references,
-So that they can be substituted in an upcoming 
+So that they can be substituted in an upcoming
 `MellonCond` directive.
 
 MAP:: Use mapped name. Instead of looking up the attribute name in the
@@ -2396,7 +2396,7 @@ load balancer. By far the most popular load balancer is
 http://www.haproxy.com/[HAProxy]. As a consequence we will use HAProxy
 examples in this document. Other load balancers behave in a similar
 fashion to HAProxy and you can extrapolate the HAProxy information to
-them. 
+them.
 
 ==== Server Name
 
@@ -2819,10 +2819,10 @@ associated with the HTTP request/response.
 ==== Chrome, SAML Chrome Panel
 
 The Chrome Web browser offers several add-ons to display SAML
-messages. The most commonly used is 
+messages. The most commonly used is
 https://chrome.google.com/webstore/detail/saml-chrome-panel/paijfdbeoenhembfhkhllainmocckace[SAML
 Chrome Panel]. SAML Chrome Panel integrates with the Chrome developer
-tools. 
+tools.
 
 Here is an example of the SAML Chrome Panel in the developer tools
 panel:
@@ -3061,7 +3061,7 @@ session based on the identifier passed as the Mellon cookie. If there
 is a valid session, Mellon will use that cached session information
 instead of contacting the IdP. Deleting the `mellon-cookie` from the
 browser will cause Mellon to believe there is no pre-existing
-session. 
+session.
 
 === Incorrect MellonEndpointPath [[incorrect_mellon_endpoint_path]]
 
@@ -3193,11 +3193,11 @@ You may wish to review <<metadata_creation>> and <<mellon_endpoint_path>>.
 It is common to have problems when using Microsoft ADFS as a SAML IdP.
 
 This blog post from Microsoft contains many of the ADFS configuration
-issues encountered when adding an SP to ADFS: 
+issues encountered when adding an SP to ADFS:
 [[adfs_blog,ADFS Deep Dive Blog]]https://blogs.technet.microsoft.com/askpfeplat/2015/03/01/adfs-deep-dive-onboarding-applications/[ADFS Deep Dive Onboarding Applications]
 
 NOTE: ADFS calls SPs a "Relying Party" and the SP configuration a
-"Relying Party Trust". 
+"Relying Party Trust".
 
 ==== ADFS Signature Algorithm [[adfs_sig_alg]]
 
@@ -3217,7 +3217,7 @@ get a message in the ADFS log like this:
 SAML request is not signed with expected signature algorithm. SAML
 request is signed with signature algorithm
 http://www.w3.org/2001/04/xmldsig-more#rsa-sha1 . Expected signature
-algorithm is http://www.w3.org/2000/09/xmldsig#rsa-sha256 
+algorithm is http://www.w3.org/2000/09/xmldsig#rsa-sha256
 ----
 
 Since SHA-1 is no longer considered secure, many ADFS administrators set
@@ -3379,7 +3379,7 @@ server: name=/etc/httpd/conf.d/ssl.conf, scheme=https hostname=mellon.example.co
 pid: 21576, tid: 140251630954624
 unparsed_uri: /saml-test/protected.html
 uri: /saml-test/protected.html
-path_info: 
+path_info:
 filename: /var/www/html/saml-test/protected.html
 query args: (null)
 Request Headers:
@@ -3566,7 +3566,7 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
         ~ See the License for the specific language governing permissions and
         ~ limitations under the License.
         -->
-      
+
       <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
       					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
       	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -3580,7 +3580,7 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
                                   </dsig:X509Data>
                                 </dsig:KeyInfo>
                               </KeyDescriptor>
-      
+
       			<SingleLogoutService
       					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -3727,7 +3727,7 @@ Loading IdP Metadata
       ~ See the License for the specific language governing permissions and
       ~ limitations under the License.
       -->
-    
+
     <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
     	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -3741,7 +3741,7 @@ Loading IdP Metadata
                                 </dsig:X509Data>
                               </dsig:KeyInfo>
                             </KeyDescriptor>
-    
+
     			<SingleLogoutService
     					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
     					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -3971,7 +3971,7 @@ Mellon Directory Configuration for URL: /mellon/login
         ~ See the License for the specific language governing permissions and
         ~ limitations under the License.
         -->
-      
+
       <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
       					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
       	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -3985,7 +3985,7 @@ Mellon Directory Configuration for URL: /mellon/login
                                   </dsig:X509Data>
                                 </dsig:KeyInfo>
                               </KeyDescriptor>
-      
+
       			<SingleLogoutService
       					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -4129,7 +4129,7 @@ Loading IdP Metadata
       ~ See the License for the specific language governing permissions and
       ~ limitations under the License.
       -->
-    
+
     <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
     	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -4143,7 +4143,7 @@ Loading IdP Metadata
                                 </dsig:X509Data>
                               </dsig:KeyInfo>
                             </KeyDescriptor>
-    
+
     			<SingleLogoutService
     					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
     					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -4385,7 +4385,7 @@ Mellon Directory Configuration for URL: /mellon/postResponse
         ~ See the License for the specific language governing permissions and
         ~ limitations under the License.
         -->
-      
+
       <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
       					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
       	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -4399,7 +4399,7 @@ Mellon Directory Configuration for URL: /mellon/postResponse
                                   </dsig:X509Data>
                                 </dsig:KeyInfo>
                               </KeyDescriptor>
-      
+
       			<SingleLogoutService
       					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -4543,7 +4543,7 @@ Loading IdP Metadata
       ~ See the License for the specific language governing permissions and
       ~ limitations under the License.
       -->
-    
+
     <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
     					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
     	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -4557,7 +4557,7 @@ Loading IdP Metadata
                                 </dsig:X509Data>
                               </dsig:KeyInfo>
                             </KeyDescriptor>
-    
+
     			<SingleLogoutService
     					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
     					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -4695,7 +4695,7 @@ server: name=/etc/httpd/conf.d/ssl.conf, scheme=https hostname=mellon.example.co
 pid: 21593, tid: 140251630954624
 unparsed_uri: /saml-test/protected.html
 uri: /saml-test/protected.html
-path_info: 
+path_info:
 filename: /var/www/html/saml-test/protected.html
 query args: (null)
 Request Headers:
@@ -4883,7 +4883,7 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
         ~ See the License for the specific language governing permissions and
         ~ limitations under the License.
         -->
-      
+
       <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
       					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
       	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -4897,7 +4897,7 @@ Mellon Directory Configuration for URL: /saml-test/protected.html
                                   </dsig:X509Data>
                                 </dsig:KeyInfo>
                               </KeyDescriptor>
-      
+
       			<SingleLogoutService
       					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
@@ -4985,7 +4985,7 @@ server: name=/etc/httpd/conf.d/ssl.conf, scheme=https hostname=mellon.example.co
 pid: 21593, tid: 140251630954624
 unparsed_uri: /favicon.ico
 uri: /favicon.ico
-path_info: 
+path_info:
 filename: /var/www/html/favicon.ico
 query args: (null)
 Request Headers:
@@ -5171,7 +5171,7 @@ Mellon Directory Configuration for URL: /favicon.ico
         ~ See the License for the specific language governing permissions and
         ~ limitations under the License.
         -->
-      
+
       <EntitiesDescriptor Name="urn:keycloak" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
       					xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
       	<EntityDescriptor entityID="https://rhsso.example.com:8443/auth/realms/ipa">
@@ -5185,7 +5185,7 @@ Mellon Directory Configuration for URL: /favicon.ico
                                   </dsig:X509Data>
                                 </dsig:KeyInfo>
                               </KeyDescriptor>
-      
+
       			<SingleLogoutService
       					Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       					Location="https://rhsso.example.com:8443/auth/realms/ipa/protocol/saml" />
