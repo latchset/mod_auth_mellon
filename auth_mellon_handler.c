@@ -1182,45 +1182,6 @@ static int am_init_logout_request(request_rec *r, LassoLogout *logout)
 
     profile = LASSO_PROFILE(logout);
 
-    /* We need to set the SessionIndex in the LogoutRequest to the SessionIndex
-     * we received during the login operation. This is not needed since release
-     * 2.3.0.
-     */
-    if (lasso_check_version(2, 3, 0, LASSO_CHECK_VERSION_NUMERIC) == 0) {
-        session = lasso_profile_get_session(profile);
-        assertion_list = lasso_session_get_assertions(
-            session, profile->remote_providerID);
-        if(! assertion_list ||
-                        LASSO_IS_SAML2_ASSERTION(assertion_list->data) == FALSE) {
-            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                          "No assertions found for the current session.");
-            lasso_logout_destroy(logout);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-        /* We currently only look at the first assertion in the list
-         * lasso_session_get_assertions returns.
-         */
-        assertion_n = assertion_list->data;
-
-        assertion = LASSO_SAML2_ASSERTION(assertion_n);
-
-        /* We assume that the first authnStatement contains the data we want. */
-        authnStatement = LASSO_SAML2_AUTHN_STATEMENT(assertion->AuthnStatement->data);
-
-        if(!authnStatement) {
-            AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                          "No AuthnStatement found in the current assertion.");
-            lasso_logout_destroy(logout);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-        if(authnStatement->SessionIndex) {
-            request = LASSO_SAMLP2_LOGOUT_REQUEST(profile->request);
-            request->SessionIndex = g_strdup(authnStatement->SessionIndex);
-        }
-    }
-
-
     /* Set the RelayState parameter to the return url (if we have one). */
     if(return_to) {
         profile->msg_relayState = g_strdup(return_to);
