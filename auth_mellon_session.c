@@ -53,16 +53,7 @@ am_cache_entry_t *am_lock_and_validate(request_rec *r,
         am_diag_log_cache_entry(r, 0, session, "Session Cache Entry");
     }
 
-    const char *cookie_token_session = am_cache_entry_get_string(
-        session, &session->cookie_token);
-    const char *cookie_token_target = am_cookie_token(r);
-    if (strcmp(cookie_token_session, cookie_token_target)) {
-        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "Session cookie parameter mismatch. "
-                      "Session created with {%s}, but current "
-                      "request has {%s}.",
-                      cookie_token_session,
-                      cookie_token_target);
+    if (!am_validate_session_cookie_token(r, session)) {
         am_cache_unlock(r, session);
         return NULL;
     }
@@ -121,6 +112,93 @@ am_cache_entry_t *am_get_request_session_by_nameid(request_rec *r, char *nameid)
 am_cache_entry_t *am_get_request_session_by_assertionid(request_rec *r, char *assertionid)
 {
     return am_lock_and_validate(r, AM_CACHE_ASSERTIONID, assertionid);
+}
+
+/* This function gets the session associated with a user, using the SessionIndex
+ *
+ * Parameters:
+ *  request_rec *r       The request we received from the user.
+ *  GList *sessionindex    The SessionIndexes
+ *
+ * Returns:
+ *  apr_array_header_t containing matched am_cache_entry_t
+ *  NULL if we don't have a session yet.
+ */
+apr_array_header_t *am_get_request_sessions_by_sessionindex(request_rec *r, GList *sessionindex)
+{
+    apr_array_header_t *sessions = apr_array_make(r->pool, 0, sizeof(am_cache_entry_t *));
+    am_cache_entry_t *session;
+    GList *i_glist;
+
+    /* Lock the table. */
+    if (!am_cache_mutex_lock(r)) {
+        return NULL;
+    }
+
+    for (i_glist = sessionindex; i_glist != NULL; i_glist = g_list_next(i_glist)) {
+        am_diag_printf(r, "searching for session with key %s (%s) ... ",
+                   (char *)i_glist->data, am_diag_cache_key_type_str(AM_CACHE_SESSIONINDEX));
+
+        session = am_cache_get_session(r, AM_CACHE_SESSIONINDEX, (char *)i_glist->data);
+        if (session == NULL) {
+            am_diag_printf(r, "not found\n");
+        } else {
+            am_diag_printf(r, "found.\n");
+            am_diag_log_cache_entry(r, 0, session, "Session Cache Entry");
+            if (am_validate_session_cookie_token(r, session)) {
+                APR_ARRAY_PUSH(sessions, am_cache_entry_t *) = session;
+            }
+        }
+    }
+    return sessions;
+}
+
+
+/* This function gets the session associated with a user, using a NameID
+ *
+ * Parameters:
+ *  request_rec *r       The request we received from the user.
+ *  char *nameid         The NameID
+ *
+ * Returns:
+ *  apr_array_header_t containing matched am_cache_entry_t
+ *  NULL if we don't have a session yet.
+ */
+apr_array_header_t *am_get_request_sessions_by_nameid(request_rec *r, char *nameid)
+{
+    apr_array_header_t *cache_sessions;
+    apr_array_header_t *sessions;
+    am_cache_entry_t *session;
+    int i = 0;
+
+    if (nameid == NULL) {
+        return NULL;
+    }
+
+    /* Lock the table. */
+    if (!am_cache_mutex_lock(r)) {
+        return NULL;
+    }
+
+    am_diag_printf(r, "searching for sessions with key %s (%s) ... ",
+                      nameid, am_diag_cache_key_type_str(AM_CACHE_NAMEID));
+
+    cache_sessions = am_cache_get_sessions(r, AM_CACHE_NAMEID, nameid);
+    if (cache_sessions == NULL || cache_sessions->nelts == 0) {
+        am_diag_printf(r, "not found\n");
+        am_cache_mutex_unlock(r);
+        return NULL;
+    }
+    am_diag_printf(r, "found. session entry size:[%d]\n", cache_sessions->nelts);
+
+    sessions = apr_array_make(r->pool, 0, sizeof(am_cache_entry_t *));
+    for (i = 0; i < cache_sessions->nelts; i++) {
+        session = APR_ARRAY_IDX(cache_sessions, i, am_cache_entry_t *);
+        if (session && am_validate_session_cookie_token(r, session)) {
+            APR_ARRAY_PUSH(sessions, am_cache_entry_t *) = session;
+        }
+    }
+    return sessions;
 }
 
 /* This function creates a new session.
@@ -194,4 +272,56 @@ void am_delete_request_session(request_rec *r, am_cache_entry_t *session)
 
     /* Delete session from the session store. */
     am_cache_delete(r, session);
+}
+
+
+/* This function releases and deletes multiple sessions.
+ *
+ * Parameters:
+ *  request_rec *r              The request we are processing.
+ *  apr_array_header_t *sessions   List of sessions we are deleting.
+ *
+ * Returns:
+ *  Nothing.
+ */
+void am_delete_request_sessions(request_rec *r, apr_array_header_t *sessions)
+{
+    /* Delete the cookie. */
+    am_cookie_delete(r);
+
+    if(sessions == NULL || sessions->nelts == 0) {
+        return;
+    }
+
+    /* Delete sessions from the session store. */
+    am_cache_delete_sessions(r, sessions);
+}
+
+
+/* this function validate the cookie token in the session entry
+ *
+ * Parameters:
+ *  request_rec *r              The request we are processing.
+ *  am_cache_entry_t *session   The session we are validating.
+ *
+ * Returns:
+ *  true on success or false on failure.
+ */
+bool am_validate_session_cookie_token(request_rec *r, am_cache_entry_t *session)
+{
+    if (session == NULL) {
+        return false;
+    }
+    const char *cookie_token_session = am_cache_entry_get_string(
+                                              session, &session->cookie_token);
+    const char *cookie_token_target = am_cookie_token(r);
+    if (strcmp(cookie_token_session, cookie_token_target)) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "Session cookie parameter mismatch. "
+                      "Session created with {%s}, but current "
+                      "request has {%s}.",
+                      cookie_token_session, cookie_token_target);
+        return false;
+    }
+    return true;
 }
