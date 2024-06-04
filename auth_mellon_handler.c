@@ -757,8 +757,11 @@ static int am_handle_logout_request(request_rec *r,
                                     char *post_data)
 {
     gint res = 0, rc = HTTP_OK;
-    am_cache_entry_t *session = NULL;
+    am_cache_entry_t *session = NULL, *e = NULL;
     am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
+    GList *sessionindex_list;
+    apr_array_header_t *cache_sessions = NULL, *logout_sessions = NULL;
+    int i;
 
     am_diag_printf(r, "enter function %s\n", __func__);
 
@@ -795,25 +798,60 @@ static int am_handle_logout_request(request_rec *r,
     am_diag_printf(r, "%s name id %s\n", __func__,
                    ((LassoSaml2NameID*)logout->parent.nameIdentifier)->content);
 
-    session = am_get_request_session_by_nameid(r,
-                    ((LassoSaml2NameID*)logout->parent.nameIdentifier)->content);
-    if (session == NULL) {
-        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "Error processing logout request message."
-                      " No session found for NameID %s",
-                      ((LassoSaml2NameID*)logout->parent.nameIdentifier)->content);
+    LassoProfile *profile = &logout->parent;
+    char *req_nameid = (char *)((LassoSaml2NameID *)profile->nameIdentifier)->content;
 
+    sessionindex_list = lasso_samlp2_logout_request_get_session_indexes((LassoSamlp2LogoutRequest*)profile->request);
+    if (req_nameid) {
+        if (sessionindex_list) {
+            cache_sessions = am_get_request_sessions_by_sessionindex(r, sessionindex_list);
+        } else {
+            cache_sessions = am_get_request_sessions_by_nameid(r, req_nameid);
+        }
+    } else {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+            "Error processing logout request message. Can't find NameID.");
+        rc = HTTP_BAD_REQUEST;
+        goto exit;
     }
 
-    am_diag_log_cache_entry(r, 0, session, "%s", __func__);
+    if (cache_sessions && cache_sessions->nelts != 0) {
+        if (sessionindex_list) {
+            const char *cache_nameid;
+            logout_sessions = apr_array_make(r->pool, 0, sizeof(am_cache_entry_t *));
+            for (i = 0; i < cache_sessions->nelts; i++) {
+                e = APR_ARRAY_IDX(cache_sessions, i, am_cache_entry_t *);
+                cache_nameid = am_cache_env_fetch_first(e, "NAME_ID");
+                if (cache_nameid == NULL) {
+                    continue;
+                }
+                if (strcmp(req_nameid, cache_nameid) == 0) {
+                    APR_ARRAY_PUSH(logout_sessions, am_cache_entry_t *) = e;
+                    session = e;
+                }
+            }
+        } else {
+            /* no SessionIndex from IdP, all sessions logout */
+            logout_sessions = cache_sessions;
+            session = APR_ARRAY_IDX(cache_sessions, 0, am_cache_entry_t *);
+        }
 
-    if (session == NULL) {
-        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "Error processing logout request message."
-                      " No session found.");
-
+        if (session == NULL) {
+            AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r,
+                          "Error processing logout request message."
+                          " Does not match the NameID of the session. [%s]", req_nameid);
+        } else {
+            for (i = 0; i < logout_sessions->nelts; i++) {
+                e = APR_ARRAY_IDX(logout_sessions, i, am_cache_entry_t *);
+                am_diag_log_cache_entry(r, 0, e, "%s", __func__);
+            }
+            /* Even if multiple sessions are subject to logout, only one of them is passed to lasso */
+            am_restore_lasso_profile_state(r, &logout->parent, session);
+        }
     } else {
-        am_restore_lasso_profile_state(r, &logout->parent, session);
+        AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r,
+                       "Error processing logout request message."
+                       " No session found. [%s]", req_nameid);
     }
 
     /* Validate the logout message. Ignore missing signature. */
@@ -821,7 +859,7 @@ static int am_handle_logout_request(request_rec *r,
     if(res != 0 && 
        res != LASSO_DS_ERROR_SIGNATURE_NOT_FOUND &&
        res != LASSO_PROFILE_ERROR_SESSION_NOT_FOUND) {
-        AM_LOG_RERROR(APLOG_MARK, APLOG_WARNING, 0, r,
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Error validating logout request."
                       " Lasso error: [%i] %s", res, lasso_strerror(res));
         rc = HTTP_INTERNAL_SERVER_ERROR;
@@ -831,10 +869,10 @@ static int am_handle_logout_request(request_rec *r,
      * caused by the IdP believing that we are logged in when we are not.
      */
 
-    if (session != NULL && res != LASSO_PROFILE_ERROR_SESSION_NOT_FOUND) {
+    if (logout_sessions != NULL && res != LASSO_PROFILE_ERROR_SESSION_NOT_FOUND) {
         /* We found a matching session -- delete it. */
-        am_delete_request_session(r, session);
-        session = NULL;
+        am_delete_request_sessions(r, logout_sessions);
+        cache_sessions = NULL;
     }
 
     /* Create response message. */
@@ -850,8 +888,8 @@ static int am_handle_logout_request(request_rec *r,
     rc = am_return_logout_response(r, &logout->parent, post_data);
 
 exit:
-    if (session != NULL) {
-        am_release_request_session(r, session);
+    if (cache_sessions != NULL) {
+        am_cache_mutex_unlock(r);
     }
 
     lasso_logout_destroy(logout);
@@ -1826,6 +1864,15 @@ static int add_attributes(am_cache_entry_t *session, request_rec *r,
     ret = am_cache_env_append(session, "ASSERTION_ID", assertion->ID);
     if(ret != OK) {
         return ret;
+    }
+
+    /* Save session SessionIndex information. */
+    if(assertion->AuthnStatement &&
+                   ((LassoSaml2AuthnStatement *)assertion->AuthnStatement->data)->SessionIndex) {
+        ret = am_cache_env_append(session, "SESSIONINDEX", ((LassoSaml2AuthnStatement *)assertion->AuthnStatement->data)->SessionIndex);
+        if(ret != OK) {
+            return ret;
+        }
     }
 
     /* Update expires timestamp of session. */
