@@ -1317,6 +1317,14 @@ const command_rec auth_mellon_commands[] = {
         " take effect. The default value is 192KiB."
         ),
     AP_INIT_TAKE1(
+        "MellonCacheFile",
+        am_set_module_config_file_slot,
+        (void *)APR_OFFSETOF(am_mod_cfg_rec, cache_file),
+        RSRC_CONF,
+        "The cache file for session resume after resstart."
+        " Default value is none (no session resume)."
+        ),
+    AP_INIT_TAKE1(
         "MellonLockFile",
         am_set_module_config_file_slot,
         (void *)APR_OFFSETOF(am_mod_cfg_rec, lock_file),
@@ -2211,7 +2219,7 @@ void *auth_mellon_server_config(apr_pool_t *p, server_rec *s)
     mod->post_size  = post_size;
 
     mod->entry_size = AM_CACHE_DEFAULT_ENTRY_SIZE;
-
+    mod->cache_file = NULL;
     mod->init_cache_size = 0;
     mod->init_lock_file = NULL;
     mod->init_entry_size = 0;
