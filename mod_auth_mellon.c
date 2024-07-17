@@ -204,6 +204,21 @@ static int am_create_request(request_rec *r)
     return OK;
 }
 
+static const char *am_hook_http_scheme(const request_rec *r)
+{
+    /* 
+     * If X-Forwarded-Proto header is set then we will use that as the scheme
+     */
+    const char *value = apr_table_get(r->headers_in, "X-Forwarded-Proto");
+    char *last = NULL;
+    if (value) {
+        value = apr_strtok(apr_pstrdup(r->pool, value), ", ", &last);
+        if (value && (apr_strnatcmp(value, "https") == 0)) {
+            return "https";
+        }
+    }
+    return NULL;
+}
 
 static void register_hooks(apr_pool_t *p)
 {
@@ -218,6 +233,7 @@ static void register_hooks(apr_pool_t *p)
     ap_hook_post_config(am_global_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(am_child_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_create_request(am_create_request, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_http_scheme(am_hook_http_scheme, NULL, NULL, APR_HOOK_MIDDLE);
 
     /* Add the hook to handle requests to the mod_auth_mellon endpoint.
      *
