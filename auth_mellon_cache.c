@@ -25,6 +25,10 @@
 APLOG_USE_MODULE(auth_mellon);
 #endif
 
+#define AM_CACHE_HEADERSIZE 120
+#define AM_CACHE_MAGIC "f3615541-1153-46d9-9867-5c4f873e065c"
+#define AM_CACHE_VERSION 1
+
 /* Calculate the pointer to a cache entry.
  *
  * Parameters:
@@ -39,8 +43,109 @@ static inline am_cache_entry_t *am_cache_entry_ptr(am_mod_cfg_rec *mod_cfg,
                                                    void *table, apr_size_t index)
 {
     uint8_t *table_calc;
-    table_calc = table;
+    table_calc = (uint8_t *)table + AM_CACHE_HEADERSIZE;
     return (am_cache_entry_t *)&table_calc[mod_cfg->init_entry_size * index];
+}
+
+/* Attempts to re-attach a previous session and checks for consitency.
+ *
+ * Parameters:
+ *  apr_pool_t *conf     The configuration pool. Valid as long as this
+ *                       configuration is valid.
+ *  apr_pool_t *tmp      A pool for memory which will be destroyed after
+ *                       all the post_config hooks are run.
+ *  server_rec *s        The current server record.
+ *
+ * Returns:
+ *  OK on successful re-attachemnt, or !OK on failure.
+ */
+static int am_cache_reload(apr_pool_t *conf, apr_pool_t *tmp, server_rec *s)
+{
+    am_mod_cfg_rec   *mod_cfg;
+    char *header;
+    int i;
+    char *last;
+    char *magic_str;
+    char *version_str;
+    char *entry_size_str;
+    char *cache_size_str;
+    int version;
+    apr_size_t entry_size;
+    apr_size_t cache_size;
+    int rv;
+
+    mod_cfg = am_get_mod_cfg(s);
+    if (mod_cfg->cache_file == NULL)
+        return !OK;
+
+    rv = apr_shm_attach(&(mod_cfg->cache), mod_cfg->cache_file, conf);
+    if (rv != APR_SUCCESS) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
+                     "shm_attach \"%s\" failed", mod_cfg->cache_file);
+
+        if (APR_STATUS_IS_ENOENT(rv))
+            (void)apr_file_remove(mod_cfg->cache_file, tmp);
+
+        return !OK;
+    }
+
+    header = apr_pstrndup(tmp, (char *)apr_shm_baseaddr_get(mod_cfg->cache),
+                          AM_CACHE_HEADERSIZE);
+
+    /* Sanity check, we need a printable string
+     * apr_pstrndup() guarantees the string is NUL terminated.
+     */
+    for (i = 0; header[i]; i++) {
+        if(!apr_isprint(header[i])) {
+            header[i] = '\0';
+            goto giveup;
+        }
+    }
+
+    /* header format is magic:version:entry_size:cache_size, parse it */
+    if ((magic_str = apr_strtok(header, ":", &last)) == NULL)
+        goto giveup;
+
+    if ((version_str = apr_strtok(NULL, ":", &last)) == NULL)
+        goto giveup;
+
+    if ((entry_size_str = apr_strtok(NULL, ":", &last)) == NULL)
+        goto giveup;
+
+    if ((cache_size_str = apr_strtok(NULL, ":", &last)) == NULL)
+        goto giveup;
+
+    if (apr_strtok(NULL, ":", &last) != NULL)
+        goto giveup;
+
+    if (strncmp(magic_str, AM_CACHE_MAGIC, sizeof(AM_CACHE_MAGIC)) != 0)
+        goto giveup;
+
+    version = (int)apr_atoi64(version_str);
+    entry_size = (apr_size_t)apr_atoi64(entry_size_str);
+    cache_size = (apr_size_t)apr_atoi64(cache_size_str);
+
+    /* One day we could perform migration here */
+    if (version != AM_CACHE_VERSION ||
+        entry_size != mod_cfg->init_entry_size)
+        goto giveup;
+
+    /* Possible improvement: handle cache size change
+     * On grow, realloc shm, update header, copy old shm, and init new entries
+     * on shrinkage, just update header
+     */
+    if (cache_size != mod_cfg->init_cache_size)
+        goto giveup;
+
+    return OK;
+
+giveup:
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
+                 "Bad cache header \"%s\"", header);
+
+    apr_shm_destroy(mod_cfg->cache);
+
+    return !OK;
 }
 
 /* Initialize the session table.
@@ -51,17 +156,86 @@ static inline am_cache_entry_t *am_cache_entry_ptr(am_mod_cfg_rec *mod_cfg,
  * Returns:
  *  Nothing.
  */
-void am_cache_init(am_mod_cfg_rec *mod_cfg)
+static void am_cache_entries_init(am_mod_cfg_rec *mod_cfg)
 {
     void *table;
     apr_size_t i;
-    /* Initialize the session table. */
+
+    /* Initialize the session header and table. */
     table = apr_shm_baseaddr_get(mod_cfg->cache);
+
+    (void)snprintf((char *)table, AM_CACHE_HEADERSIZE,
+                   "%s:%d:%" APR_SIZE_T_FMT ":%" APR_SIZE_T_FMT,
+                   AM_CACHE_MAGIC, AM_CACHE_VERSION,
+                   mod_cfg->init_entry_size,
+                   mod_cfg->init_cache_size);
+
     for (i = 0; i < mod_cfg->init_cache_size; i++) {
         am_cache_entry_t *e = am_cache_entry_ptr(mod_cfg, table, i);
         e->key[0] = '\0';
         e->access = 0;
     }
+}
+
+/* Initialize session cache
+ *
+ * Parameters:
+ *  apr_pool_t *conf     The configuration pool. Valid as long as this
+ *                       configuration is valid.
+ *  apr_pool_t *tmp      A pool for memory which will be destroyed after
+ *                       all the post_config hooks are run.
+ *  server_rec *s        The current server record.
+ *
+ * Returns:
+ *  OK on successful re-attachemnt, or !OK on failure.
+ */
+int am_cache_init(apr_pool_t *conf, apr_pool_t *tmp, server_rec *s)
+{
+    am_mod_cfg_rec   *mod_cfg;
+    apr_size_t        mem_size;
+    apr_status_t      rv;
+    char buffer[512];
+
+    mod_cfg = am_get_mod_cfg(s);
+
+    /* find out the memory size of the cache */
+    mem_size = AM_CACHE_HEADERSIZE
+             + (mod_cfg->init_entry_size * mod_cfg->init_cache_size);
+
+    if (am_cache_reload(conf, tmp, s) != OK) {
+        apr_pool_t *pool;
+
+        if (mod_cfg->cache_file) {
+            /* allocate the shm from an unmanaged pool
+             * so that it is not destroyed up on exit.
+             */
+            rv = apr_pool_create_core(&pool);
+            if (rv != APR_SUCCESS) {
+                ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
+                             "apr_pool_create_core: Error [%d] \"%s\"", rv,
+                             apr_strerror(rv, buffer, sizeof(buffer)));
+                return !OK;
+            }
+        } else {
+            pool = conf;
+        }
+
+        /* Create the shared memory, exit if it fails. */
+        rv = apr_shm_create(&(mod_cfg->cache), mem_size,
+                            mod_cfg->cache_file, pool);
+
+        if (rv != APR_SUCCESS) {
+            ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
+                         "shm_create: Error [%d] \"%s\"", rv,
+                         apr_strerror(rv, buffer, sizeof(buffer)));
+            return !OK;
+        }
+
+        /* Initialize the session table. */
+        am_cache_entries_init(mod_cfg);
+    }
+
+    return OK;
 }
 
 /* This function locks the session table and locates a session entry.
