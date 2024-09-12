@@ -2194,14 +2194,14 @@ void *auth_mellon_server_config(apr_pool_t *p, server_rec *s)
     /* we want to keeep our global configuration of shared memory and
      * mutexes, so we try to find it in the userdata before doing anything
      * else */
-    apr_pool_userdata_get((void **)&mod, key, p);
+    apr_pool_userdata_get((void **)&mod, key, s->process->pool);
     if (mod) {
         srv->mc = mod;
         return srv;
     }
 
     /* the module has not been initiated at all */
-    mod = apr_palloc(p, sizeof(*mod));
+    mod = apr_palloc(s->process->pool, sizeof(*mod));
 
     mod->cache_size = 100;  /* ought to be enough for everybody */
     mod->lock_file  = "/var/run/mod_auth_mellon.lock";
@@ -2219,7 +2219,7 @@ void *auth_mellon_server_config(apr_pool_t *p, server_rec *s)
     mod->cache      = NULL;
     mod->lock       = NULL;
 
-    apr_pool_userdata_set(mod, key, apr_pool_cleanup_null, p);
+    apr_pool_userdata_set(mod, key, apr_pool_cleanup_null, s->process->pool);
 
     srv->mc = mod;
 
