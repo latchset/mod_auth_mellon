@@ -103,6 +103,14 @@ MellonCacheSize 100
 # be used.
 # Default: MellonCacheEntrySize 196608
 
+# MellonCacheFile is the full path to a file used as session cache
+# shared memory segment name. Defining it will enable peristent
+# session cache across httpd restarts, until the shared memory segment
+# is removed, or a change is made to MellonCacheSizeMellonCacheSize or
+# MellonCacheEntrySize.
+# Default: unset, which means sessions are not persistent
+# MellonCacheFile "/var/run/mod_auth_mellon.cache"
+
 # MellonLockFile is the full path to a file used for synchronizing access
 # to the session data. The path should only be used by one instance of
 # apache at a time. The server must be restarted before any changes to this
