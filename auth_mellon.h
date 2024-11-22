@@ -390,7 +390,8 @@ typedef struct am_cache_entry_t {
 typedef enum { 
     AM_CACHE_SESSION, 
     AM_CACHE_NAMEID,
-    AM_CACHE_ASSERTIONID
+    AM_CACHE_ASSERTIONID,
+    AM_CACHE_SESSIONINDEX
 } am_cache_key_t;
 
 /* Type for configuring environment variable names */
@@ -472,6 +473,8 @@ am_cache_entry_t *am_cache_new(request_rec *r,
                                const char *key,
                                const char *cookie_token);
 void am_cache_unlock(request_rec *r, am_cache_entry_t *entry);
+bool am_cache_mutex_lock(request_rec *r);
+void am_cache_mutex_unlock(request_rec *r);
 
 void am_cache_update_expires(request_rec *r, am_cache_entry_t *t, apr_time_t expires);
 void am_cache_update_idle_timeout(request_rec *r, am_cache_entry_t *t, int session_idle_timeout);
@@ -482,6 +485,7 @@ int am_cache_env_append(am_cache_entry_t *session,
 const char *am_cache_env_fetch_first(am_cache_entry_t *t,
                                      const char *var);
 void am_cache_delete(request_rec *r, am_cache_entry_t *session);
+void am_cache_delete_sessions(request_rec *r, apr_array_header_t *sessions);
 
 int am_cache_set_lasso_state(am_cache_entry_t *session,
                              const char *lasso_identity,
@@ -489,17 +493,25 @@ int am_cache_set_lasso_state(am_cache_entry_t *session,
                              const char *lasso_saml_response);
 const char *am_cache_get_lasso_identity(am_cache_entry_t *session);
 const char *am_cache_get_lasso_session(am_cache_entry_t *session);
-
+am_cache_entry_t *am_cache_get_session(request_rec *r,
+                                       am_cache_key_t type,
+                                       const char *key);
+apr_array_header_t *am_cache_get_sessions(request_rec *r,
+                                       am_cache_key_t type,
+                                       const char *key);
 
 am_cache_entry_t *am_get_request_session(request_rec *r);
 am_cache_entry_t *am_get_request_session_by_nameid(request_rec *r, 
                                                    char *nameid);
 am_cache_entry_t *am_get_request_session_by_assertionid(request_rec *r,
                                                         char *assertionid);
+apr_array_header_t *am_get_request_sessions_by_sessionindex(request_rec *r, GList *sessionindex);
+apr_array_header_t *am_get_request_sessions_by_nameid(request_rec *r, char *nameid);
 am_cache_entry_t *am_new_request_session(request_rec *r);
 void am_release_request_session(request_rec *r, am_cache_entry_t *session);
 void am_delete_request_session(request_rec *r, am_cache_entry_t *session);
-
+void am_delete_request_sessions(request_rec *r, apr_array_header_t *sessions);
+bool am_validate_session_cookie_token(request_rec *r, am_cache_entry_t *session);
 
 char *am_reconstruct_url(request_rec *r);
 int am_validate_redirect_url(request_rec *r, const char *url);
