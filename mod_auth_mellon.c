@@ -89,7 +89,7 @@ static int am_global_init(apr_pool_t *conf, apr_pool_t *log,
      * initialized.
      */
     mod->init_cache_size = mod->cache_size;
-    mod->init_lock_file = apr_pstrdup(conf, mod->lock_file);
+    mod->init_lock_file = apr_pstrdup(s->process->pool, mod->lock_file);
     mod->init_entry_size = mod->entry_size;
     if (mod->init_entry_size < AM_CACHE_MIN_ENTRY_SIZE) {
         mod->init_entry_size = AM_CACHE_MIN_ENTRY_SIZE;
@@ -100,7 +100,7 @@ static int am_global_init(apr_pool_t *conf, apr_pool_t *log,
 
 
     /* Create the shared memory, exit if it fails. */
-    rv = apr_shm_create(&(mod->cache), mem_size, NULL, conf);
+    rv = apr_shm_create(&(mod->cache), mem_size, NULL, s->process->pool);
 
     if (rv != APR_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
@@ -117,7 +117,7 @@ static int am_global_init(apr_pool_t *conf, apr_pool_t *log,
     rv = apr_global_mutex_create(&(mod->lock),
                                  mod->init_lock_file,
                                  APR_LOCK_DEFAULT,
-                                 conf);
+                                 s->process->pool);
 
     if (rv != APR_SUCCESS) {
         ap_log_error(APLOG_MARK, APLOG_ERR, rv, s,
