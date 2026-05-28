@@ -333,6 +333,9 @@ typedef struct am_dir_cfg_rec {
     /* Send Expect Header. */
     int send_expect_header;
 
+    /* Force signing of AuthnRequests (MellonSignAuthnRequest). */
+    int sign_authn_request;
+
 } am_dir_cfg_rec;
 
 /* Bitmask for PAOS service options */

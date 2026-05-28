@@ -118,6 +118,11 @@ static const int default_enabled_invalidation_session = 0;
  */
 static const int default_send_expect_header = 1;
 
+/* The default setting for signing AuthnRequests.
+ */
+static const int default_sign_authn_request = 0;
+static const int inherit_sign_authn_request = -1;
+
 /* This function handles configuration directives which set a 
  * multivalued string slot in the module configuration (the destination
  * strucure is a hash).
@@ -1291,6 +1296,25 @@ static const char *am_set_send_expect_header_slots(cmd_parms *cmd,
     return NULL;
 }
 
+static const char *am_set_sign_authn_request_slots(cmd_parms *cmd,
+                                                   void *struct_ptr,
+                                                   const char *arg)
+{
+    am_dir_cfg_rec *d = (am_dir_cfg_rec *)struct_ptr;
+
+    if (strcasecmp(arg, "on") == 0) {
+        d->sign_authn_request = 1;
+    }
+    else if (strcasecmp(arg, "off") == 0) {
+        d->sign_authn_request = 0;
+    } else {
+        return apr_psprintf(cmd->pool, "%s: must be one of: 'on', 'off'",
+                            cmd->cmd->name);
+    }
+
+    return NULL;
+}
+
 /* This array contains all the configuration directive which are handled
  * by auth_mellon.
  */    
@@ -1784,6 +1808,14 @@ const command_rec auth_mellon_commands[] = {
         OR_AUTHCFG,
         "Send the Expect Header. Default is 'on'."
         ),
+    AP_INIT_TAKE1(
+        "MellonSignAuthnRequest",
+        am_set_sign_authn_request_slots,
+        NULL,
+        OR_AUTHCFG,
+        "Force signing of AuthnRequests with the configured SP private key."
+        " Default is 'off'."
+        ),
 
     {NULL}
 };
@@ -1894,6 +1926,8 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->enabled_invalidation_session = default_enabled_invalidation_session;
 
     dir->send_expect_header = default_send_expect_header;
+
+    dir->sign_authn_request = inherit_sign_authn_request;
 
     return dir;
 }
@@ -2160,6 +2194,8 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
         (add_cfg->send_expect_header != default_send_expect_header ?
          add_cfg->send_expect_header :
          base_cfg->send_expect_header);
+
+    new_cfg->sign_authn_request = CFG_MERGE(add_cfg, base_cfg, sign_authn_request);
 
     return new_cfg;
 }
