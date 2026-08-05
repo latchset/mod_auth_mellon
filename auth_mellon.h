@@ -454,6 +454,9 @@ static const LassoSignatureMethod default_signature_method =
 #endif
 static const int inherit_signature_method = -1;
 
+static const int default_sign_authn_request = 0;
+static const int inherit_sign_authn_request = -1;
+
 void *auth_mellon_dir_config(apr_pool_t *p, char *d);
 void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add);
 void *auth_mellon_server_config(apr_pool_t *p, server_rec *s);

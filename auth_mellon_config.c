@@ -118,11 +118,6 @@ static const int default_enabled_invalidation_session = 0;
  */
 static const int default_send_expect_header = 1;
 
-/* The default setting for signing AuthnRequests.
- */
-static const int default_sign_authn_request = 0;
-static const int inherit_sign_authn_request = -1;
-
 /* This function handles configuration directives which set a 
  * multivalued string slot in the module configuration (the destination
  * strucure is a hash).
@@ -1808,14 +1803,15 @@ const command_rec auth_mellon_commands[] = {
         OR_AUTHCFG,
         "Send the Expect Header. Default is 'on'."
         ),
-    AP_INIT_TAKE1(
+
+    AP_INIT_FLAG(
         "MellonSignAuthnRequest",
-        am_set_sign_authn_request_slots,
-        NULL,
+        ap_set_flag_slot,
+        (void *)APR_OFFSETOF(am_dir_cfg_rec, sign_authn_request),
         OR_AUTHCFG,
-        "Force signing of AuthnRequests with the configured SP private key."
-        " Default is 'off'."
-        ),
+        "Force signing of AuthnRequests with the configured SP private key. Default is 'Off'."
+    ),
+    AP_INIT_FLAG("MellonSignAuthnRequest", cmd_sign_test, NULL, OR_AUTHCFG, "Help text"),
 
     {NULL}
 };
@@ -1959,6 +1955,9 @@ static bool cfg_can_inherit_lasso_server(const am_dir_cfg_rec *add_cfg)
     if (apr_hash_count(add_cfg->sp_org_name) > 0
         || apr_hash_count(add_cfg->sp_org_display_name) > 0
         || apr_hash_count(add_cfg->sp_org_url) > 0)
+        return false;
+
+   if (add_cfg->sign_authn_request > 0)
         return false;
 
     return true;
