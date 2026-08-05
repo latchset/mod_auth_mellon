@@ -1291,24 +1291,6 @@ static const char *am_set_send_expect_header_slots(cmd_parms *cmd,
     return NULL;
 }
 
-static const char *am_set_sign_authn_request_slots(cmd_parms *cmd,
-                                                   void *struct_ptr,
-                                                   const char *arg)
-{
-    am_dir_cfg_rec *d = (am_dir_cfg_rec *)struct_ptr;
-
-    if (strcasecmp(arg, "on") == 0) {
-        d->sign_authn_request = 1;
-    }
-    else if (strcasecmp(arg, "off") == 0) {
-        d->sign_authn_request = 0;
-    } else {
-        return apr_psprintf(cmd->pool, "%s: must be one of: 'on', 'off'",
-                            cmd->cmd->name);
-    }
-
-    return NULL;
-}
 
 /* This array contains all the configuration directive which are handled
  * by auth_mellon.
@@ -1811,7 +1793,6 @@ const command_rec auth_mellon_commands[] = {
         OR_AUTHCFG,
         "Force signing of AuthnRequests with the configured SP private key. Default is 'Off'."
     ),
-    AP_INIT_FLAG("MellonSignAuthnRequest", cmd_sign_test, NULL, OR_AUTHCFG, "Help text"),
 
     {NULL}
 };
