@@ -3190,6 +3190,14 @@ static int am_init_authn_request_common(request_rec *r,
     }
 #endif
 
+    if (CFG_VALUE(dir_cfg, sign_authn_request)) {
+        lasso_profile_set_signature_hint(LASSO_PROFILE(login),
+                                         LASSO_PROFILE_SIGNATURE_HINT_FORCE);
+        am_diag_printf(r, "set  LASSO_PROFILE_SIGNATURE_HINT_FORCE\n", __func__);
+    } else {
+        am_diag_printf(r, "sign_authn_request off, not setting LASSO_PROFILE_SIGNATURE_HINT_FORCE\n", __func__);
+    }
+
     ret = lasso_login_build_authn_request_msg(login);
     if (ret != 0) {
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
