@@ -1316,7 +1316,7 @@ Sign-On Session.
 === Installing Mellon
 
 Mellon can be built and installed from source code located in the
-https://github.com/UNINETT/mod_auth_mellon[mod_auth_mellon GitHub
+https://github.com/latchset/mod_auth_mellon[mod_auth_mellon GitHub
 repository]. However for most people the best option is to install
 Mellon using a pre-built package available from the package manager on
 your operating system. Pre-built packages relieve you of having to
