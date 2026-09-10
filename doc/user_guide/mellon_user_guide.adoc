@@ -1441,7 +1441,7 @@ Mellon configuration directives are broken into 2 types:
 * Directory level (i.e. applied to directories and URL locations)
 
 The README groups all module level directives together at the top of
-the file, the directory level directory level directives follow. Most
+the file, the directory level directives follow. Most
 users will only need to configure the directory level directives which
 comprise 2 basic types and are documented in http://httpd.apache.org/docs/current/mod/core.html[Apache Core Features]:
 
@@ -2528,7 +2528,7 @@ there is usually only one or two `StatusCode` elements. The outermost
 `StatusCode` is called the top-level status code, the next nested
 `StatusCode` is called the second-level status code. `StatusCode`
 values *must* be a URI. The top-level status codes *must* be one of
-one of the top-level status codes defined by the SAML specification. The
+the top-level status codes defined by the SAML specification. The
 second-level status code must also be a URI and should be one of the
 second-level status codes defined by SAML but a system entity may
 define its own non-top-level status codes.
