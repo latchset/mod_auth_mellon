@@ -1291,6 +1291,7 @@ static const char *am_set_send_expect_header_slots(cmd_parms *cmd,
     return NULL;
 }
 
+
 /* This array contains all the configuration directive which are handled
  * by auth_mellon.
  */    
@@ -1785,6 +1786,14 @@ const command_rec auth_mellon_commands[] = {
         "Send the Expect Header. Default is 'on'."
         ),
 
+    AP_INIT_FLAG(
+        "MellonSignAuthnRequest",
+        ap_set_flag_slot,
+        (void *)APR_OFFSETOF(am_dir_cfg_rec, sign_authn_request),
+        OR_AUTHCFG,
+        "Force signing of AuthnRequests with the configured SP private key. Default is 'Off'."
+    ),
+
     {NULL}
 };
 
@@ -1895,6 +1904,8 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
 
     dir->send_expect_header = default_send_expect_header;
 
+    dir->sign_authn_request = inherit_sign_authn_request;
+
     return dir;
 }
 
@@ -1925,6 +1936,9 @@ static bool cfg_can_inherit_lasso_server(const am_dir_cfg_rec *add_cfg)
     if (apr_hash_count(add_cfg->sp_org_name) > 0
         || apr_hash_count(add_cfg->sp_org_display_name) > 0
         || apr_hash_count(add_cfg->sp_org_url) > 0)
+        return false;
+
+   if (add_cfg->sign_authn_request > 0)
         return false;
 
     return true;
@@ -2160,6 +2174,8 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
         (add_cfg->send_expect_header != default_send_expect_header ?
          add_cfg->send_expect_header :
          base_cfg->send_expect_header);
+
+    new_cfg->sign_authn_request = CFG_MERGE(add_cfg, base_cfg, sign_authn_request);
 
     return new_cfg;
 }
