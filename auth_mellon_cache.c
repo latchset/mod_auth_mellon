@@ -81,11 +81,37 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
                                 am_cache_key_t type,
                                 const char *key)
 {
+    /* Lock the table. */
+    if (!am_cache_mutex_lock(r)) {
+        return NULL;
+    }
+
+    am_cache_entry_t *e = am_cache_get_session(r, type, key);
+    if (e == NULL) {
+        am_cache_mutex_unlock(r);
+    }
+    return e;
+}
+
+/* This function locates a session entry.
+ * The table must be locked before calling this function.
+ *
+ * Parameters:
+ *  request_rec *r       The request we are processing.
+ *  am_cache_key_t type  AM_CACHE_SESSION, AM_CACHE_NAMEID or AM_CACHE_ASSERTIONID
+ *                        or AM_CACHE_SESSIONINDEX
+ *  const char *key      The session key or user
+ *
+ * Returns:
+ *  The session entry on success or NULL on failure.
+ */
+am_cache_entry_t *am_cache_get_session(request_rec *r,
+                                am_cache_key_t type,
+                                const char *key)
+{
     am_mod_cfg_rec *mod_cfg;
     void *table;
     apr_size_t i;
-    int rv;
-    char buffer[512];
 
 
     /* Check if we have a valid session key. We abort if we don't. */
@@ -99,6 +125,7 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
         break;
     case AM_CACHE_NAMEID:
     case AM_CACHE_ASSERTIONID:
+    case AM_CACHE_SESSIONINDEX:
         break;
     default:
         return NULL;
@@ -106,16 +133,6 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
     }
 
     mod_cfg = am_get_mod_cfg(r->server);
-
-
-    /* Lock the table. */
-    if((rv = apr_global_mutex_lock(mod_cfg->lock)) != APR_SUCCESS) {
-        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "apr_global_mutex_lock() failed [%d]: %s",
-                      rv, apr_strerror(rv, buffer, sizeof(buffer)));
-        return NULL;
-    }
-
     table = apr_shm_baseaddr_get(mod_cfg->cache);
 
 
@@ -139,6 +156,10 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
         case AM_CACHE_ASSERTIONID:
             /* tablekey may be NULL */
             tablekey = am_cache_env_fetch_first(e, "ASSERTION_ID");
+            break;
+        case AM_CACHE_SESSIONINDEX:
+            /* tablekey may be NULL */
+            tablekey = am_cache_env_fetch_first(e, "SESSIONINDEX");
             break;
         default:
             tablekey = NULL;
@@ -166,12 +187,104 @@ am_cache_entry_t *am_cache_lock(request_rec *r,
     }
 
 
-    /* We didn't find a entry matching the key. Unlock the table and
-     * return NULL;
-     */
-    apr_global_mutex_unlock(mod_cfg->lock);
     return NULL;
 }
+
+/* This function locates a session entries.
+ * The table must be locked before calling this function.
+ *
+ * Parameters:
+ *  request_rec *r       The request we are processing.
+ *  am_cache_key_t type  AM_CACHE_SESSION, AM_CACHE_NAMEID or AM_CACHE_ASSERTIONID
+ *                        or AM_CACHE_SESSIONINDEX
+ *  const char *key      The session key or user
+ *
+ * Returns:
+ *  The session entries on success or NULL on failure.
+ */
+apr_array_header_t *am_cache_get_sessions(request_rec *r,
+                                am_cache_key_t type,
+                                const char *key)
+{
+    am_mod_cfg_rec *mod_cfg;
+    void *table;
+    apr_size_t i;
+    apr_array_header_t *sessions = apr_array_make(r->pool, 0, sizeof(am_cache_entry_t *));
+
+    /* Check if we have a valid session key. We abort if we don't. */
+    if (key == NULL)
+        return NULL;
+
+    switch (type) {
+    case AM_CACHE_SESSION:
+        if (strlen(key) != AM_ID_LENGTH)
+            return NULL;
+        break;
+    case AM_CACHE_NAMEID:
+    case AM_CACHE_ASSERTIONID:
+    case AM_CACHE_SESSIONINDEX:
+        break;
+    default:
+        return NULL;
+        break;
+    }
+
+    mod_cfg = am_get_mod_cfg(r->server);
+    table = apr_shm_baseaddr_get(mod_cfg->cache);
+
+
+    for(i = 0; i < mod_cfg->init_cache_size; i++) {
+        am_cache_entry_t *e = am_cache_entry_ptr(mod_cfg, table, i);
+        const char *tablekey;
+
+        if (e->key[0] == '\0') {
+            /* This entry is empty. Skip it. */
+            continue;
+        }
+
+        switch (type) {
+        case AM_CACHE_SESSION:
+            tablekey = e->key;
+            break;
+        case AM_CACHE_NAMEID:
+            /* tablekey may be NULL */
+            tablekey = am_cache_env_fetch_first(e, "NAME_ID");
+            break;
+        case AM_CACHE_ASSERTIONID:
+            /* tablekey may be NULL */
+            tablekey = am_cache_env_fetch_first(e, "ASSERTION_ID");
+            break;
+        case AM_CACHE_SESSIONINDEX:
+            /* tablekey may be NULL */
+            tablekey = am_cache_env_fetch_first(e, "SESSIONINDEX");
+            break;
+        default:
+            tablekey = NULL;
+            break;
+        }
+
+        if (tablekey == NULL)
+            continue;
+
+        if(strcmp(tablekey, key) == 0) {
+            apr_time_t now = apr_time_now();
+            /* We found the entry. */
+            if ((e->expires > now) &&
+                ((e->idle_timeout == -1) ||
+                 (e->idle_timeout > now))) {
+                /* And it hasn't expired. */
+                APR_ARRAY_PUSH(sessions, am_cache_entry_t *) = e;
+            }
+            else {
+                am_diag_log_cache_entry(r, 0, e,
+                                        "found expired session, now %s\n",
+                                        am_diag_time_t_to_8601(r, now));
+            }
+        }
+    }
+    return sessions;
+}
+
 
 static inline bool am_cache_entry_slot_is_empty(am_cache_storage_t *slot)
 {
@@ -304,7 +417,6 @@ am_cache_entry_t *am_cache_new(request_rec *r,
     int i;
     apr_time_t age;
     int rv;
-    char buffer[512];
 
     /* Check if we have a valid session key. We abort if we don't. */
     if(key == NULL || strlen(key) != AM_ID_LENGTH) {
@@ -316,10 +428,7 @@ am_cache_entry_t *am_cache_new(request_rec *r,
 
 
     /* Lock the table. */
-    if((rv = apr_global_mutex_lock(mod_cfg->lock)) != APR_SUCCESS) {
-        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
-                      "apr_global_mutex_lock() failed [%d]: %s",
-                      rv, apr_strerror(rv, buffer, sizeof(buffer)));
+    if (!am_cache_mutex_lock(r)) {
         return NULL;
     }
 
@@ -415,7 +524,7 @@ am_cache_entry_t *am_cache_new(request_rec *r,
         AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
                       "Unable to store cookie token in new session.");
         t->key[0] = '\0'; /* Mark the entry as free. */
-        apr_global_mutex_unlock(mod_cfg->lock);
+        am_cache_mutex_unlock(r);
         return NULL;
     }
 
@@ -439,11 +548,45 @@ am_cache_entry_t *am_cache_new(request_rec *r,
  */
 void am_cache_unlock(request_rec *r, am_cache_entry_t *entry)
 {
-    am_mod_cfg_rec *mod_cfg;
-
     /* Update access time. */
     entry->access = apr_time_now();
 
+    am_cache_mutex_unlock(r);
+}
+
+/* This function mutex lock
+ *
+ * Parameters:
+ *  request_rec *r           The request we are processing.
+ *
+ * Returns:
+ *  true on success or false on failure.
+ */
+bool am_cache_mutex_lock(request_rec *r)
+{
+    am_mod_cfg_rec *mod_cfg = am_get_mod_cfg(r->server);
+    int rv;
+    char buffer[512];
+    if((rv = apr_global_mutex_lock(mod_cfg->lock)) != APR_SUCCESS) {
+        AM_LOG_RERROR(APLOG_MARK, APLOG_ERR, 0, r,
+                      "apr_global_mutex_lock() failed [%d]: %s",
+                      rv, apr_strerror(rv, buffer, sizeof(buffer)));
+        return false;
+    }
+    return true;
+}
+
+/* This function mutext unlocks
+ *
+ * Parameters:
+ *  request_rec *r           The request we are processing.
+ *
+ * Returns:
+ *  Nothing.
+ */
+void am_cache_mutex_unlock(request_rec *r)
+{
+    am_mod_cfg_rec *mod_cfg;
     mod_cfg = am_get_mod_cfg(r->server);
     apr_global_mutex_unlock(mod_cfg->lock);
 }
@@ -758,6 +901,29 @@ void am_cache_delete(request_rec *r, am_cache_entry_t *cache)
     am_cache_unlock(r, cache);
 }
 
+/* This function deletes the specified keys from the session store
+ * and releases the locks.
+ * Equivalent to performing am_cache_delete on multiple sessions.
+ *
+ * Parameters:
+ *  request_rec *r            The request we are processing.
+ *  apr_array_header_t *sessions   The entry we are deleting.
+ *
+ * Returns:
+ *  Nothing.
+ */
+void am_cache_delete_sessions(request_rec *r, apr_array_header_t *sessions)
+{
+    am_cache_entry_t *cache;
+    int i;
+    for (i = 0; i < sessions->nelts; i++) {
+        cache = APR_ARRAY_IDX(sessions, i, am_cache_entry_t *);
+        am_diag_log_cache_entry(r, 0, cache, "delete session");
+        cache->key[0] = '\0';
+        cache->access = apr_time_now();
+    }
+    am_cache_mutex_unlock(r);
+}
 
 /* This function stores a lasso identity dump and a lasso session dump in
  * the given session object.
