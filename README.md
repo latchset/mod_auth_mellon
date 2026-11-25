@@ -973,6 +973,13 @@ the maintainers directly at the following email address:
 This allows us to coordinate the disclosure of the vulnerability with the
 fixes for the vulnerability.
 
+## Creating a release
+
+1. Update `NEWS`.
+1. Update version number to X.Y.Z in `configure.ac`.
+1. Commit both & tag the repository with `vX.Y.Z`.
+1. Run `make distfile`.
+1. Create a Github release from the tag, and add the tarball as a file to it.
 
 ## Contributors
 
